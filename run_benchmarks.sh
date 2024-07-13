@@ -21,28 +21,23 @@ bench3Results=()
 function runBenchmark() {
     local serviceScript="$1"
     local benchmarks=(1 2 3)
-
     killServerOnPort 8000
     sleep 5
-
     if [[ "$serviceScript" == *"hasura"* ]]; then
         bash "$serviceScript" # Run synchronously without background process
     else
         bash "$serviceScript" & # Run in daemon mode
     fi
     sleep 15 # Give some time for the service to start up
-
     local graphqlEndpoint="http://localhost:8000/graphql"
     if [[ "$serviceScript" == *"hasura"* ]]; then
         graphqlEndpoint=http://$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' graphql-engine):8080/v1/graphql
     fi
-
     for bench in "${benchmarks[@]}"; do
         local benchmarkScript="wrk/bench.sh"
         # Replace / with _
         local sanitizedServiceScriptName=$(echo "$serviceScript" | tr '/' '_')
         local resultFiles=("result1_${sanitizedServiceScriptName}.txt" "result2_${sanitizedServiceScriptName}.txt" "result3_${sanitizedServiceScriptName}.txt")
-
         bash "test_query${bench}.sh" "$graphqlEndpoint"
         # Warmup run
         bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
@@ -51,7 +46,6 @@ function runBenchmark() {
         sleep 1
         bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
         sleep 1
-
         # 3 benchmark runs
         for resultFile in "${resultFiles[@]}"; do
             echo "Running benchmark $bench for $serviceScript"
@@ -65,7 +59,6 @@ function runBenchmark() {
             fi
         done
     done
-
     # Clean up
     if [ "$serviceScript" == "graphql/apollo_server/run.sh" ]; then
         cd graphql/apollo_server/
@@ -89,7 +82,6 @@ fi
 
 server="$1"
 serviceScript="graphql/${server}/run.sh"
-
 if [ ! -f "$serviceScript" ]; then
     echo "Error: Server script not found for $server"
     exit 1
@@ -99,3 +91,26 @@ killServerOnPort 3000
 sh nginx/run.sh
 
 runBenchmark "$serviceScript"
+
+
+# If the server is tailcall, output the results for each benchmark
+if [ "$server" == "tailcall" ]; then
+    echo "Benchmark 1"
+    cat ./bench1_result1_graphql_tailcall_run.sh.txt
+    cat ./bench1_result2_graphql_tailcall_run.sh.txt
+    cat ./bench1_result3_graphql_tailcall_run.sh.txt
+    echo "End of Benchmark 1"
+    echo ""
+    echo "Benchmark 2"
+    cat ./bench2_result1_graphql_tailcall_run.sh.txt
+    cat ./bench2_result2_graphql_tailcall_run.sh.txt
+    cat ./bench2_result3_graphql_tailcall_run.sh.txt
+    echo "End of Benchmark 2"
+    echo ""
+    echo "Benchmark 3"
+    cat ./bench3_result1_graphql_tailcall_run.sh.txt
+    cat ./bench3_result2_graphql_tailcall_run.sh.txt
+    cat ./bench3_result3_graphql_tailcall_run.sh.txt
+    echo "End of Benchmark 3"
+    echo ""
+fi
