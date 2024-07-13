@@ -36,7 +36,6 @@ jobs:
 
             else
               echo "No specific setup script found for ${{ matrix.service }}, running general setup"
-              cat <
             fi
             
 
