@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - benchmarks_in_parallel
+      - test
 permissions:
   contents: write
   pull-requests: write
