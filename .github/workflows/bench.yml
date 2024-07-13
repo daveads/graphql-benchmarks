@@ -75,12 +75,9 @@ jobs:
           path: .
 
       - name: List downloaded artifacts
-        run: ls -R
+        run: ls -la bench*.txt || echo "No matching files found"
 
-      - name: Install gnuplot
-        run: sudo apt-get update && sudo apt-get install -y gnuplot
-
-      - name: Check gnuplot installation
+      - name: Testing for gnuplot
         run: |
           cat << EOF > gnuplot_check.sh
           #!/bin/bash
