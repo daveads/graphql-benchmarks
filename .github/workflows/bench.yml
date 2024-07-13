@@ -29,8 +29,17 @@ jobs:
           imageName: graphql-benchmarks
           push: never
           runCmd: |
-            echo "Running setup script"
-            bash ./setup.sh
+            echo "Running setup script for ${{ matrix.service }}"
+            if [ -f "./graphql/${{ matrix.service }}/setup.sh" ]; then
+            bash ./graphql/${{ matrix.service }}/setup.sh
+            echo "Setup completed for ${{ matrix.service }}"
+
+            else
+              echo "No specific setup script found for ${{ matrix.service }}, running general setup"
+              cat <
+            fi
+            
+
             echo "Setup completed"
             echo "Running benchmark for ${{ matrix.service }}"
             chmod +x ./run_benchmarks.sh
@@ -75,9 +84,12 @@ jobs:
           path: .
 
       - name: List downloaded artifacts
-        run: ls -la bench*.txt || echo "No matching files found"
+        run: ls -R
 
-      - name: Testing for gnuplot
+      - name: Install gnuplot
+        run: sudo apt-get update && sudo apt-get install -y gnuplot
+
+      - name: Testing gnuplot installation
         run: |
           cat << EOF > gnuplot_check.sh
           #!/bin/bash
