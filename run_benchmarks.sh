@@ -106,6 +106,10 @@ for service in "apollo_server" "caliban" "netflix_dgs" "gqlgen" "tailcall" "asyn
   fi
 done
 
+echo "${bench1Results[@]}"
+echo "${bench2Results[@]}"
+echo "${bench3Results[@]}"
+
 bash analyze.sh "${bench1Results[@]}"
 bash analyze.sh "${bench2Results[@]}"
 bash analyze.sh "${bench3Results[@]}"
