@@ -110,6 +110,7 @@ jobs:
 
       - name: Analyze results
         run: |
+          rm results.md
           for bench in 1 2 3; do
             ls bench${bench}*.txt || echo "No matching files found for bench${bench}*.txt"
             echo "Processing files for bench${bench}:"
