@@ -110,24 +110,13 @@ jobs:
 
       - name: Analyze results
         run: |
-          # Benchmark 1
-          ls bench1*.txt || echo "No matching files found for bench1*.txt"
-          echo "Processing files for bench1:"
-          bash analyze.sh bench1*.txt
-          echo bench1*.txt
+          for bench in 1 2 3; do
+            ls bench${bench}*.txt || echo "No matching files found for bench${bench}*.txt"
+            echo "Processing files for bench${bench}:"
+            bash analyze.sh bench${bench}*.txt
+            echo bench${bench}*.txt
+          done
 
-          # Benchmark 2
-          ls bench2*.txt || echo "No matching files found for bench2*.txt"
-          echo "Processing files for bench2:"
-          bash analyze.sh bench2*.txt
-          echo bench2*.txt
-
-          # Benchmark 3
-          ls bench3*.txt || echo "No matching files found for bench3*.txt"
-          echo "Processing files for bench3:"
-          bash analyze.sh bench3*.txt
-          echo bench3*.txt
-          
       - name: Print benchmark results
         run: cat ./results.md
 

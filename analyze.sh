@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Install gnuplot
-sudo apt-get update && sudo apt-get install -y gnuplot
-
 function extractMetric() {
   local file="$1"
   local metric="$2"
@@ -134,9 +131,6 @@ if [[ $whichBench == 3 ]]; then
 fi
 
 echo "resultsTable: $resultsTable"
-
-# Delete results.md file
-rm  -f results.md
 
 # Print the results table in a new file
 resultsFile="results.md"
