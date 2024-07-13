@@ -117,9 +117,6 @@ jobs:
             echo bench${bench}*.txt
           done
 
-      - name: Search for *.png files
-        run: ls -R
-
       - name: Print benchmark results
         run: cat ./results.md
 
