@@ -3,8 +3,7 @@ on:
   pull_request_target:
     types: [assigned, opened, synchronize, reopened, edited]
   push:
-    branches:
-      - main
+    branches: 
       - benchmarks_in_parallel
 permissions:
   contents: write
@@ -12,10 +11,8 @@ permissions:
   issues: write
 jobs:
   benchmark:
-    runs-on: benchmarking-runner
+    runs-on: ubuntu-latest
     if: github.event.head_commit.message != 'Update performance results in README.md'
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       matrix:
         service: [apollo_server, caliban, netflix_dgs, gqlgen, tailcall, async_graphql, hasura, graphql_jit]
@@ -24,9 +21,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
-      
-      - name: Build devcontainer and run setup and benchmark
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Build devcontainer and run setup and benchmark Test**
         uses: devcontainers/ci@v0.3
         with:
           imageName: graphql-benchmarks
@@ -56,7 +53,7 @@ jobs:
           echo "Matching bench*.txt files:"
           ls -la bench*.txt || echo "No matching files found"
 
-          
+
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
         with:
@@ -70,16 +67,16 @@ jobs:
     steps:
       - name: Checkout (GitHub)
         uses: actions/checkout@v4
-      
+
       - name: Download all benchmark results
         uses: actions/download-artifact@v3
         with:
           name: benchmark-results
           path: .
-      
+
       - name: List downloaded artifacts
         run: ls -R
-      
+
       - name: Install gnuplot
         run: sudo apt-get update && sudo apt-get install -y gnuplot
 
@@ -138,13 +135,13 @@ jobs:
             bash analyze.sh bench${bench}*.txt
             echo bench${bench}*.txt
           done
-      
+
       - name: Search for *.png files
         run: ls -R
 
       - name: Print benchmark results
         run: cat ./results.md
-      
+
       - name: Comment benchmark results on PR
         if: github.event_name == 'pull_request_target'
         uses: peter-evans/commit-comment@v3
@@ -152,7 +149,7 @@ jobs:
           sha: ${{ github.event.pull_request.head.sha }}
           body-path: "results.md"
           reactions: eyes
-      
+
       - name: Commit and push changes (on main branch)
         if: github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v5

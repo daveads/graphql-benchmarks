@@ -132,6 +132,9 @@ fi
 
 echo "resultsTable: $resultsTable"
 
+# Delete results.md file
+rm  -f results.md
+
 # Print the results table in a new file
 resultsFile="results.md"
 echo -e $resultsTable >> $resultsFile
