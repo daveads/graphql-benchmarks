@@ -5,7 +5,11 @@ sudo apt-get update && sudo apt-get install -y gnuplot
 
 function extractMetric() {
   local file="$1"
+  echo "Checkout files $file"
+  
   local metric="$2"
+  echo "check metric variable $metric"
+  
   grep "$metric" "$file" | awk '{print $2}' | sed 's/ms//'
 }
 
