@@ -2,14 +2,12 @@
 
 # Install gnuplot
 sudo apt-get update && sudo apt-get install -y gnuplot
+echo "see 1 >>> $1"
+echo "see 2 >>> $2"
 
 function extractMetric() {
   local file="$1"
-  echo "Checkout files $file"
-  
   local metric="$2"
-  echo "check metric variable $metric"
-  
   grep "$metric" "$file" | awk '{print $2}' | sed 's/ms//'
 }
 
@@ -138,9 +136,6 @@ if [[ $whichBench == 3 ]]; then
 fi
 
 echo "resultsTable: $resultsTable"
-
-# Delete results.md file
-rm  -f results.md
 
 # Print the results table in a new file
 resultsFile="results.md"
