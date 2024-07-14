@@ -107,3 +107,8 @@ cat ./bench3_result2_graphql_tailcall_run.sh.txt
 cat ./bench3_result3_graphql_tailcall_run.sh.txt
 echo "End of Benchmark 3"
 echo ""
+
+
+bash analyze.sh "${bench1Results[@]}"
+bash analyze.sh "${bench2Results[@]}"
+bash analyze.sh "${bench3Results[@]}"
