@@ -119,6 +119,7 @@ jobs:
               # Check if any matching files were found
               if [ ${#resultFiles[@]} -ne 0 ]; then
                   echo "Processing benchmark $bench results:"
+                  ls bench${bench}*.txt || echo "No matching files found for bench${bench}*.txt"
                   bash analyze.sh "${resultFiles[@]}"
               else
                   echo "No result files found for benchmark $bench"
