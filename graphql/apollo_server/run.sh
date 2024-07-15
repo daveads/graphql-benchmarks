@@ -20,4 +20,4 @@ minutes=$(echo "($duration % 3600) / 60" | bc)
 seconds=$(echo "$duration % 60" | bc)
 
 # Print the execution time
-printf "Execution time: %d hours, %d minutes, and %.2f seconds\n" $hours $minutes $seconds
+printf "Apollo run.sh >>> Execution time: %d hours, %d minutes, and %.2f seconds\n" $hours $minutes $seconds

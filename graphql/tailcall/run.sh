@@ -40,6 +40,6 @@ end_time=$(date +%s)
 
 # Calculate and print execution time
 execution_time=$((end_time - start_time))
-echo "RUN.sh >>> Script execution time: $execution_time seconds"
+echo "tailcall RUN.sh >>> Script execution time: $execution_time seconds"
 
 exit 1

@@ -19,4 +19,4 @@ minutes=$(echo "$duration / 60" | bc)
 seconds=$(echo "$duration % 60" | bc)
 
 # Print the execution time
-printf "Setup.sh >>> Execution time: %d minutes and %.2f seconds\n" $minutes $seconds
+printf "Apollo Setup.sh >>> Execution time: %d minutes and %.2f seconds\n" $minutes $seconds

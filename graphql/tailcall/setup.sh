@@ -18,4 +18,4 @@ duration=$((end_time - start_time))
 minutes=$((duration / 60))
 seconds=$((duration % 60))
 
-echo "SETUP.sh >>> Script execution time: $minutes minutes and $seconds seconds"
+echo "tailcall SETUP.sh >>> Script execution time: $minutes minutes and $seconds seconds"

@@ -99,4 +99,4 @@ end_time=$(date +%s)
 duration=$((end_time - start_time))
 minutes=$((duration / 60))
 seconds=$((duration % 60))
-echo "Run_benchmark.sh >>> Total execution time: $minutes minutes and $seconds seconds"
+echo "$service :: Run_benchmark.sh >>> Total execution time: $minutes minutes and $seconds seconds"
