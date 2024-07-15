@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start the timer
-start_time=$(date +%s.%N)
+start_time=$(date +%s)
 
 pwd
 cd graphql/apollo_server
@@ -9,15 +9,15 @@ npm i
 npm start
 
 # End the timer
-end_time=$(date +%s.%N)
+end_time=$(date +%s)
 
 # Calculate the duration
-duration=$(echo "$end_time - $start_time" | bc)
+duration=$((end_time - start_time))
 
 # Convert to hours, minutes, and seconds
-hours=$(echo "$duration / 3600" | bc)
-minutes=$(echo "($duration % 3600) / 60" | bc)
-seconds=$(echo "$duration % 60" | bc)
+hours=$((duration / 3600))
+minutes=$(( (duration % 3600) / 60 ))
+seconds=$((duration % 60))
 
 # Print the execution time
-printf "Apollo run.sh >>> Execution time: %d hours, %d minutes, and %.2f seconds\n" $hours $minutes $seconds
+printf " apollo_server Run.sh >>> Execution time: %d hours, %d minutes, and %d seconds\n" $hours $minutes $seconds
