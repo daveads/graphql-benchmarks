@@ -1,5 +1,3 @@
-RUN date +%s > /build_start_time
-
 # Start with the Microsoft's Ubuntu 22.04 base image for Codespaces
 FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu-22.04
 
@@ -43,5 +41,3 @@ WORKDIR /workspace
 
 # Expose necessary ports
 EXPOSE 8000 3000
-
-RUN echo $(($(date +%s) - $(cat /build_start_time))) > /build_duration
