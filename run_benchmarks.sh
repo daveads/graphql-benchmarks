@@ -1,5 +1,7 @@
 #!/bin/bash
 
+start_time=$(date +%s)
+
 # Start services and run benchmarks
 function killServerOnPort() {
   local port="$1"
@@ -92,3 +94,9 @@ if [ "$service" == "apollo_server" ]; then
 elif [ "$service" == "hasura" ]; then
     bash "graphql/hasura/kill.sh"
 fi
+
+end_time=$(date +%s)
+duration=$((end_time - start_time))
+minutes=$((duration / 60))
+seconds=$((duration % 60))
+echo "Run_benchmark.sh >>> Total execution time: $minutes minutes and $seconds seconds"
