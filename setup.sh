@@ -76,4 +76,4 @@ measure_time $start_time
 # Calculate and print total execution time
 total_end_time=$(date +%s)
 total_duration=$((total_end_time - total_start_time))
-echo "Total execution time: $total_duration seconds"
+echo "setup.sh >>> Total execution time: $total_duration seconds"
