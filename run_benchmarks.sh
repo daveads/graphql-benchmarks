@@ -19,6 +19,7 @@ killServerOnPort 3000
 sh nginx/run.sh
 
 function runBenchmark() {
+    start_time=$(date +%s)
     killServerOnPort 8000
     sleep 5
     local serviceScript="$1"
@@ -68,9 +69,15 @@ function runBenchmark() {
             fi
         done
     done
+    
+    end_time=$(date +%s)
+    execution_time=$((end_time - start_time))
+    echo "Service $serviceScript finished executing in $execution_time seconds"
 }
 
 rm "results.md"
+
+total_start_time=$(date +%s)
 
 for service in "apollo_server" "caliban" "netflix_dgs" "gqlgen" "tailcall" "async_graphql" "hasura" "graphql_jit"; do
   runBenchmark "graphql/${service}/run.sh"
@@ -83,6 +90,11 @@ for service in "apollo_server" "caliban" "netflix_dgs" "gqlgen" "tailcall" "asyn
     bash "graphql/hasura/kill.sh"
   fi
 done
+
+total_end_time=$(date +%s)
+total_execution_time=$((total_end_time - total_start_time))
+echo "Total time to execute all services: $total_execution_time seconds"
+
 
 echo "${bench1Results[@]}"
 echo "${bench2Results[@]}"
