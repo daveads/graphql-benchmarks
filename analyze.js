@@ -10,6 +10,7 @@ function extractMetric(file, metric) {
     const result = execSync(command, { encoding: 'utf-8' }).trim();
     return result;
   } catch (error) {
+    console.error(`Error extracting metric from ${file}: ${error.message}`);
     return null;
   }
 }
@@ -63,12 +64,18 @@ if (resultFiles[0].startsWith("bench2")) {
   whichBench = 3;
 }
 
-/*
 const reqSecHistogramFile = `req_sec_histogram${whichBench}.png`;
 const latencyHistogramFile = `latency_histogram${whichBench}.png`;
 
+function getMaxValue(data) {
+  return Math.max(...data.split('\n').slice(1).map(line => parseFloat(line.split(' ')[1])));
+}
+
+const reqSecMax = getMaxValue(fs.readFileSync(reqSecData, 'utf-8')) * 1.2;
+const latencyMax = getMaxValue(fs.readFileSync(latencyData, 'utf-8')) * 1.2;
+
 const gnuplotScript = `
-set term png size 1280,720 enhanced font 'Courier,12'
+set term pngcairo size 1280,720 enhanced font 'Courier,12'
 set output '${reqSecHistogramFile}'
 set style data histograms
 set style histogram cluster gap 1
@@ -76,21 +83,24 @@ set style fill solid border -1
 set xtics rotate by -45
 set boxwidth 0.9
 set title 'Requests/Sec'
-stats '${reqSecData}' using 2 nooutput
-set yrange [0:STATS_max*1.2]
+set yrange [0:${reqSecMax}]
 set key outside right top
 plot '${reqSecData}' using 2:xtic(1) title 'Req/Sec'
 
 set output '${latencyHistogramFile}'
 set title 'Latency (in ms)'
-stats '${latencyData}' using 2 nooutput
-set yrange [0:STATS_max*1.2]
+set yrange [0:${latencyMax}]
 plot '${latencyData}' using 2:xtic(1) title 'Latency'
 `;
 
+const gnuplotScriptFile = '/tmp/gnuplot_script.gp';
+fs.writeFileSync(gnuplotScriptFile, gnuplotScript);
+
 try {
-  execSync(`gnuplot -e '${gnuplotScript.replace(/'/g, "'\\''")}'`);
+  execSync(`gnuplot ${gnuplotScriptFile}`, { stdio: 'inherit' });
+  console.log('Gnuplot executed successfully');
 } catch (error) {
+  console.error('Error executing gnuplot:', error.message);
   process.exit(1);
 }
 
@@ -103,14 +113,17 @@ function moveFile(source, destination) {
   try {
     if (fs.existsSync(source)) {
       fs.renameSync(source, destination);
+      console.log(`Moved ${source} to ${destination}`);
+    } else {
+      console.log(`Source file ${source} does not exist`);
     }
   } catch (error) {
+    console.error(`Error moving file ${source}: ${error.message}`);
   }
 }
 
 moveFile(reqSecHistogramFile, path.join(assetsDir, reqSecHistogramFile));
 moveFile(latencyHistogramFile, path.join(assetsDir, latencyHistogramFile));
-*/
 
 const serverRPS = {};
 servers.forEach((server) => {
