@@ -1,31 +1,22 @@
-const fs = require("fs");
-const { exec } = require("child_process");
-const path = require("path");
+#!/usr/bin/env node
 
-console.log("Result files:", process.argv.slice(2));
-console.log("Current working directory:", process.cwd());
+const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
-// Helper functions
-const extractMetric = (file, metric) => {
-  console.log(`Attempting to read file: ${file}`);
-  if (!fs.existsSync(file)) {
-    console.error(`Error: File ${file} does not exist.`);
-    return null;
-  }
+function extractMetric(file, metric) {
   try {
-    const content = fs.readFileSync(file, "utf-8");
-    console.log(`Successfully read file: ${file}`);
-    const regex = new RegExp(`${metric}\\s+(\\d+\\.?\\d*)`);
-    const match = content.match(regex);
-    return match ? parseFloat(match[1]) : null;
+    return execSync(`grep "${metric}" "${file}" | awk '{print $2}' | sed 's/ms//'`, { encoding: 'utf-8' }).trim();
   } catch (error) {
-    console.error(`Error reading file ${file}:`, error);
+    console.error(`Error extracting metric from ${file}:`, error);
     return null;
   }
-};
+}
 
-const average = (values) =>
-  values.reduce((sum, value) => sum + value, 0) / values.length;
+function average(values) {
+  const sum = values.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+  return sum / values.length;
+}
 
 const formattedServerNames = {
   tailcall: "Tailcall",
@@ -38,69 +29,34 @@ const formattedServerNames = {
   graphql_jit: "GraphQL JIT",
 };
 
-const servers = [
-  "apollo",
-  "caliban",
-  "netflixdgs",
-  "gqlgen",
-  "tailcall",
-  "async_graphql",
-  "hasura",
-  "graphql_jit",
-];
+const servers = ["apollo", "caliban", "netflixdgs", "gqlgen", "tailcall", "async_graphql", "hasura", "graphql_jit"];
 const resultFiles = process.argv.slice(2);
 const avgReqSecs = {};
 const avgLatencies = {};
 
-// Check if enough result files are provided
-if (resultFiles.length < servers.length * 3) {
-  console.error(`Error: Not enough result files provided. Expected ${servers.length * 3}, but got ${resultFiles.length}.`);
-  process.exit(1);
-}
-
 // Extract metrics and calculate averages
 servers.forEach((server, idx) => {
+  const startIdx = idx * 3;
   const reqSecVals = [];
   const latencyVals = [];
   for (let j = 0; j < 3; j++) {
-    const fileIdx = idx * 3 + j;
-    if (fileIdx >= resultFiles.length) {
-      console.error(`Error: Not enough result files provided for server ${server}`);
-      continue;
-    }
-    const file = resultFiles[fileIdx];
-    console.log(`Processing file ${file} for server ${server}`);
-    const reqSec = extractMetric(file, "Requests/sec");
-    const latency = extractMetric(file, "Latency");
+    const fileIdx = startIdx + j;
+    const reqSec = extractMetric(resultFiles[fileIdx], "Requests/sec");
+    const latency = extractMetric(resultFiles[fileIdx], "Latency");
     if (reqSec !== null) reqSecVals.push(reqSec);
     if (latency !== null) latencyVals.push(latency);
   }
-  if (reqSecVals.length > 0) avgReqSecs[server] = average(reqSecVals);
-  if (latencyVals.length > 0) avgLatencies[server] = average(latencyVals);
+  avgReqSecs[server] = average(reqSecVals);
+  avgLatencies[server] = average(latencyVals);
 });
 
 // Generating data files for gnuplot
 const reqSecData = "/tmp/reqSec.dat";
 const latencyData = "/tmp/latency.dat";
 
-const writeDataFile = (filePath, data) => {
-  const content = [
-    "Server Value",
-    ...data.map(({ server, value }) => `${server} ${value}`),
-  ].join("\n");
-  fs.writeFileSync(filePath, content);
-};
+fs.writeFileSync(reqSecData, "Server Value\n" + servers.map(server => `${server} ${avgReqSecs[server]}`).join('\n'));
+fs.writeFileSync(latencyData, "Server Value\n" + servers.map(server => `${server} ${avgLatencies[server]}`).join('\n'));
 
-writeDataFile(
-  reqSecData,
-  servers.map((server) => ({ server, value: avgReqSecs[server] }))
-);
-writeDataFile(
-  latencyData,
-  servers.map((server) => ({ server, value: avgLatencies[server] }))
-);
-
-// Determine which benchmark to use
 let whichBench = 1;
 if (resultFiles[0].startsWith("bench2")) {
   whichBench = 2;
@@ -112,26 +68,32 @@ const reqSecHistogramFile = `req_sec_histogram${whichBench}.png`;
 const latencyHistogramFile = `latency_histogram${whichBench}.png`;
 
 // Plotting using gnuplot
-const plotWithGnuplot = (outputFile, title, dataFile) => {
-  const script = `
-    set term pngcairo size 1280,720 enhanced font "Courier,12"
-    set output "${outputFile}"
-    set style data histograms
-    set style histogram cluster gap 1
-    set style fill solid border -1
-    set xtics rotate by -45
-    set boxwidth 0.9
-    set title "${title}"
-    stats "${dataFile}" using 2 nooutput
-    set yrange [0:STATS_max*1.2]
-    set key outside right top
-    plot "${dataFile}" using 2:xtic(1) title "${title.split(" ")[0]}"
-  `;
-  exec(`gnuplot -e '${script}'`);
-};
+const gnuplotScript = `
+set term pngcairo size 1280,720 enhanced font "Courier,12"
+set output "${reqSecHistogramFile}"
+set style data histograms
+set style histogram cluster gap 1
+set style fill solid border -1
+set xtics rotate by -45
+set boxwidth 0.9
+set title "Requests/Sec"
+stats "${reqSecData}" using 2 nooutput
+set yrange [0:STATS_max*1.2]
+set key outside right top
+plot "${reqSecData}" using 2:xtic(1) title "Req/Sec"
 
-plotWithGnuplot(reqSecHistogramFile, "Requests/Sec", reqSecData);
-plotWithGnuplot(latencyHistogramFile, "Latency (in ms)", latencyData);
+set output "${latencyHistogramFile}"
+set title "Latency (in ms)"
+stats "${latencyData}" using 2 nooutput
+set yrange [0:STATS_max*1.2]
+plot "${latencyData}" using 2:xtic(1) title "Latency"
+`;
+
+try {
+  execSync(`gnuplot -e '${gnuplotScript}'`);
+} catch (error) {
+  console.error("Error executing gnuplot:", error);
+}
 
 // Move PNGs to assets
 const assetsDir = path.join(__dirname, "assets");
@@ -172,9 +134,7 @@ sortedServers.forEach((server) => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  const relativePerformance = (avgReqSecs[server] / lastServerReqSecs).toFixed(
-    2
-  );
+  const relativePerformance = (avgReqSecs[server] / lastServerReqSecs).toFixed(2);
 
   resultsTable += `\n|| [${formattedServerNames[server]}] | \`${formattedReqSecs}\` | \`${formattedLatencies}\` | \`${relativePerformance}x\` |`;
 });
