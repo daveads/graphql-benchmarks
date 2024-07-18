@@ -68,6 +68,7 @@ const reqSecHistogramFile = `req_sec_histogram${whichBench}.png`;
 const latencyHistogramFile = `latency_histogram${whichBench}.png`;
 
 // Plotting using gnuplot
+/**
 const gnuplotScript = `
 set term pngcairo size 1280,720 enhanced font "Courier,12"
 set output "${reqSecHistogramFile}"
@@ -102,6 +103,7 @@ if (!fs.existsSync(assetsDir)) {
 }
 fs.renameSync(reqSecHistogramFile, path.join(assetsDir, reqSecHistogramFile));
 fs.renameSync(latencyHistogramFile, path.join(assetsDir, latencyHistogramFile));
+**/
 
 // Calculate relative performance and build the results table
 const serverRPS = {};
