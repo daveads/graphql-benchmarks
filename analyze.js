@@ -132,14 +132,24 @@ const sortedServers = Object.keys(serverRPS).sort(
 const lastServer = sortedServers[sortedServers.length - 1];
 const lastServerReqSecs = avgReqSecs[lastServer];
 
+const resultsFile = "results.md";
+
+// Initialize results table if it doesn't exist
+if (!fs.existsSync(resultsFile)) {
+  fs.writeFileSync(resultsFile, `<!-- PERFORMANCE_RESULTS_START -->
+
+| Query | Server | Requests/sec | Latency (ms) | Relative |
+|-------:|--------:|--------------:|--------------:|---------:|`);
+}
+
 let resultsTable = "";
 
 if (whichBench === 1) {
-  resultsTable += `<!-- PERFORMANCE_RESULTS_START -->\n\n| Query | Server | Requests/sec | Latency (ms) | Relative |\n|-------:|--------:|--------------:|--------------:|---------:|\n| ${whichBench} | \`{ posts { id userId title user { id name email }}}\` |`;
+  resultsTable += `\n| ${whichBench} | \`{ posts { id userId title user { id name email }}}\` |`;
 } else if (whichBench === 2) {
-  resultsTable += `| ${whichBench} | \`{ posts { title }}\` |`;
+  resultsTable += `\n| ${whichBench} | \`{ posts { title }}\` |`;
 } else if (whichBench === 3) {
-  resultsTable += `| ${whichBench} | \`{ greet }\` |`;
+  resultsTable += `\n| ${whichBench} | \`{ greet }\` |`;
 }
 
 sortedServers.forEach((server) => {
@@ -156,14 +166,13 @@ sortedServers.forEach((server) => {
   resultsTable += `\n|| [${formattedServerNames[server]}] | \`${formattedReqSecs}\` | \`${formattedLatencies}\` | \`${relativePerformance}x\` |`;
 });
 
-if (whichBench === 3) {
-  resultsTable += `\n\n<!-- PERFORMANCE_RESULTS_END -->`;
-}
+// Append to the results file
+fs.appendFileSync(resultsFile, resultsTable + "\n");
 
-const resultsFile = "results.md";
-fs.writeFileSync(resultsFile, resultsTable);
-
+// Only update README.md after processing all benchmarks
 if (whichBench === 3) {
+  fs.appendFileSync(resultsFile, "\n<!-- PERFORMANCE_RESULTS_END -->");
+  
   const finalResults = fs
     .readFileSync(resultsFile, "utf-8")
     .replace(/(\r\n|\n|\r)/gm, "\\n");
