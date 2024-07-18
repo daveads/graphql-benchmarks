@@ -64,46 +64,61 @@ if (resultFiles[0].startsWith("bench2")) {
   whichBench = 3;
 }
 
+// Commented out gnuplot-related code
+/*
 const reqSecHistogramFile = `req_sec_histogram${whichBench}.png`;
 const latencyHistogramFile = `latency_histogram${whichBench}.png`;
 
-// Plotting using gnuplot
-/**
 const gnuplotScript = `
-set term pngcairo size 1280,720 enhanced font "Courier,12"
-set output "${reqSecHistogramFile}"
+set term png size 1280,720 enhanced font 'Courier,12'
+set output '${reqSecHistogramFile}'
 set style data histograms
 set style histogram cluster gap 1
 set style fill solid border -1
 set xtics rotate by -45
 set boxwidth 0.9
-set title "Requests/Sec"
-stats "${reqSecData}" using 2 nooutput
+set title 'Requests/Sec'
+stats '${reqSecData}' using 2 nooutput
 set yrange [0:STATS_max*1.2]
 set key outside right top
-plot "${reqSecData}" using 2:xtic(1) title "Req/Sec"
+plot '${reqSecData}' using 2:xtic(1) title 'Req/Sec'
 
-set output "${latencyHistogramFile}"
-set title "Latency (in ms)"
-stats "${latencyData}" using 2 nooutput
+set output '${latencyHistogramFile}'
+set title 'Latency (in ms)'
+stats '${latencyData}' using 2 nooutput
 set yrange [0:STATS_max*1.2]
-plot "${latencyData}" using 2:xtic(1) title "Latency"
+plot '${latencyData}' using 2:xtic(1) title 'Latency'
 `;
 
 try {
-  execSync(`gnuplot -e '${gnuplotScript}'`);
+  execSync(`gnuplot -e '${gnuplotScript.replace(/'/g, "'\\''")}'`);
 } catch (error) {
   console.error("Error executing gnuplot:", error);
+  process.exit(1);
 }
 
-// Move PNGs to assets
+// Move PNGs to assets with error handling
 const assetsDir = path.join(__dirname, "assets");
 if (!fs.existsSync(assetsDir)) {
   fs.mkdirSync(assetsDir);
 }
-fs.renameSync(reqSecHistogramFile, path.join(assetsDir, reqSecHistogramFile));
-fs.renameSync(latencyHistogramFile, path.join(assetsDir, latencyHistogramFile));
-**/
+
+function moveFile(source, destination) {
+  try {
+    if (fs.existsSync(source)) {
+      fs.renameSync(source, destination);
+      console.log(`Successfully moved ${source} to ${destination}`);
+    } else {
+      console.error(`File not found: ${source}`);
+    }
+  } catch (error) {
+    console.error(`Error moving ${source} to ${destination}:`, error);
+  }
+}
+
+moveFile(reqSecHistogramFile, path.join(assetsDir, reqSecHistogramFile));
+moveFile(latencyHistogramFile, path.join(assetsDir, latencyHistogramFile));
+*/
 
 // Calculate relative performance and build the results table
 const serverRPS = {};
