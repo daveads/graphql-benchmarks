@@ -1,15 +1,27 @@
-#!/usr/bin/env node
-
 const fs = require("fs");
 const { exec } = require("child_process");
 const path = require("path");
 
+console.log("Result files:", process.argv.slice(2));
+console.log("Current working directory:", process.cwd());
+
 // Helper functions
 const extractMetric = (file, metric) => {
-  const content = fs.readFileSync(file, "utf-8");
-  const regex = new RegExp(`${metric}\\s+(\\d+\\.?\\d*)`);
-  const match = content.match(regex);
-  return match ? parseFloat(match[1]) : null;
+  console.log(`Attempting to read file: ${file}`);
+  if (!fs.existsSync(file)) {
+    console.error(`Error: File ${file} does not exist.`);
+    return null;
+  }
+  try {
+    const content = fs.readFileSync(file, "utf-8");
+    console.log(`Successfully read file: ${file}`);
+    const regex = new RegExp(`${metric}\\s+(\\d+\\.?\\d*)`);
+    const match = content.match(regex);
+    return match ? parseFloat(match[1]) : null;
+  } catch (error) {
+    console.error(`Error reading file ${file}:`, error);
+    return null;
+  }
 };
 
 const average = (values) =>
@@ -40,17 +52,31 @@ const resultFiles = process.argv.slice(2);
 const avgReqSecs = {};
 const avgLatencies = {};
 
+// Check if enough result files are provided
+if (resultFiles.length < servers.length * 3) {
+  console.error(`Error: Not enough result files provided. Expected ${servers.length * 3}, but got ${resultFiles.length}.`);
+  process.exit(1);
+}
+
 // Extract metrics and calculate averages
 servers.forEach((server, idx) => {
   const reqSecVals = [];
   const latencyVals = [];
   for (let j = 0; j < 3; j++) {
     const fileIdx = idx * 3 + j;
-    reqSecVals.push(extractMetric(resultFiles[fileIdx], "Requests/sec"));
-    latencyVals.push(extractMetric(resultFiles[fileIdx], "Latency"));
+    if (fileIdx >= resultFiles.length) {
+      console.error(`Error: Not enough result files provided for server ${server}`);
+      continue;
+    }
+    const file = resultFiles[fileIdx];
+    console.log(`Processing file ${file} for server ${server}`);
+    const reqSec = extractMetric(file, "Requests/sec");
+    const latency = extractMetric(file, "Latency");
+    if (reqSec !== null) reqSecVals.push(reqSec);
+    if (latency !== null) latencyVals.push(latency);
   }
-  avgReqSecs[server] = average(reqSecVals);
-  avgLatencies[server] = average(latencyVals);
+  if (reqSecVals.length > 0) avgReqSecs[server] = average(reqSecVals);
+  if (latencyVals.length > 0) avgLatencies[server] = average(latencyVals);
 });
 
 // Generating data files for gnuplot
@@ -184,3 +210,5 @@ if (whichBench === 3) {
 resultFiles.forEach((file) => {
   fs.unlinkSync(file);
 });
+
+console.log("Script execution completed.");
