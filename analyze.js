@@ -6,9 +6,10 @@ const path = require('path');
 
 function extractMetric(file, metric) {
   try {
-    return execSync(`grep "${metric}" "${file}" | awk '{print $2}' | sed 's/ms//'`, { encoding: 'utf-8' }).trim();
+    const command = `grep "${metric}" "${file}" | awk '{print $2}' | sed 's/ms//'`;
+    const result = execSync(command, { encoding: 'utf-8' }).trim();
+    return result;
   } catch (error) {
-    console.error(`Error extracting metric from ${file}:`, error);
     return null;
   }
 }
@@ -34,7 +35,6 @@ const resultFiles = process.argv.slice(2);
 const avgReqSecs = {};
 const avgLatencies = {};
 
-// Extract metrics and calculate averages
 servers.forEach((server, idx) => {
   const startIdx = idx * 3;
   const reqSecVals = [];
@@ -50,7 +50,6 @@ servers.forEach((server, idx) => {
   avgLatencies[server] = average(latencyVals);
 });
 
-// Generating data files for gnuplot
 const reqSecData = "/tmp/reqSec.dat";
 const latencyData = "/tmp/latency.dat";
 
@@ -64,7 +63,6 @@ if (resultFiles[0].startsWith("bench2")) {
   whichBench = 3;
 }
 
-// Commented out gnuplot-related code
 /*
 const reqSecHistogramFile = `req_sec_histogram${whichBench}.png`;
 const latencyHistogramFile = `latency_histogram${whichBench}.png`;
@@ -93,11 +91,9 @@ plot '${latencyData}' using 2:xtic(1) title 'Latency'
 try {
   execSync(`gnuplot -e '${gnuplotScript.replace(/'/g, "'\\''")}'`);
 } catch (error) {
-  console.error("Error executing gnuplot:", error);
   process.exit(1);
 }
 
-// Move PNGs to assets with error handling
 const assetsDir = path.join(__dirname, "assets");
 if (!fs.existsSync(assetsDir)) {
   fs.mkdirSync(assetsDir);
@@ -107,12 +103,8 @@ function moveFile(source, destination) {
   try {
     if (fs.existsSync(source)) {
       fs.renameSync(source, destination);
-      console.log(`Successfully moved ${source} to ${destination}`);
-    } else {
-      console.error(`File not found: ${source}`);
     }
   } catch (error) {
-    console.error(`Error moving ${source} to ${destination}:`, error);
   }
 }
 
@@ -120,7 +112,6 @@ moveFile(reqSecHistogramFile, path.join(assetsDir, reqSecHistogramFile));
 moveFile(latencyHistogramFile, path.join(assetsDir, latencyHistogramFile));
 */
 
-// Calculate relative performance and build the results table
 const serverRPS = {};
 servers.forEach((server) => {
   serverRPS[server] = avgReqSecs[server];
@@ -134,8 +125,7 @@ const lastServerReqSecs = avgReqSecs[lastServer];
 
 const resultsFile = "results.md";
 
-// Initialize results table if it doesn't exist
-if (!fs.existsSync(resultsFile)) {
+if (!fs.existsSync(resultsFile) || fs.readFileSync(resultsFile, 'utf8').trim() === '') {
   fs.writeFileSync(resultsFile, `<!-- PERFORMANCE_RESULTS_START -->
 
 | Query | Server | Requests/sec | Latency (ms) | Relative |
@@ -166,10 +156,8 @@ sortedServers.forEach((server) => {
   resultsTable += `\n|| [${formattedServerNames[server]}] | \`${formattedReqSecs}\` | \`${formattedLatencies}\` | \`${relativePerformance}x\` |`;
 });
 
-// Append to the results file
 fs.appendFileSync(resultsFile, resultsTable + "\n");
 
-// Only update README.md after processing all benchmarks
 if (whichBench === 3) {
   fs.appendFileSync(resultsFile, "\n<!-- PERFORMANCE_RESULTS_END -->");
   
@@ -192,9 +180,6 @@ if (whichBench === 3) {
   fs.writeFileSync(readmePath, readmeContent);
 }
 
-// Delete the result TXT files
 resultFiles.forEach((file) => {
   fs.unlinkSync(file);
 });
-
-console.log("Script execution completed.");
