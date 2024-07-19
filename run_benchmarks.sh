@@ -1,8 +1,6 @@
 #!/bin/bash
 
-start_time=$(date +%s)
-
-# Start services and run benchmarks
+# Function to kill server on a specific port
 function killServerOnPort() {
   local port="$1"
   local pid=$(lsof -t -i:"$port")
@@ -14,31 +12,33 @@ function killServerOnPort() {
   fi
 }
 
-bench1Results=()
-bench2Results=()
-bench3Results=()
-
+# Function to run benchmark for a single service
 function runBenchmark() {
     killServerOnPort 8000
     sleep 5
     local serviceScript="$1"
     local benchmarks=(1 2 3)
+
     if [[ "$serviceScript" == *"hasura"* ]]; then
         bash "$serviceScript" # Run synchronously without background process
     else
         bash "$serviceScript" & # Run in daemon mode
     fi
     sleep 15 # Give some time for the service to start up
+
     local graphqlEndpoint="http://localhost:8000/graphql"
     if [[ "$serviceScript" == *"hasura"* ]]; then
         graphqlEndpoint=http://$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' graphql-engine):8080/v1/graphql
     fi
+
     for bench in "${benchmarks[@]}"; do
         local benchmarkScript="wrk/bench.sh"
         # Replace / with _
         local sanitizedServiceScriptName=$(echo "$serviceScript" | tr '/' '_')
-        local resultFiles=("result1_${sanitizedServiceScriptName}.txt" "result2_${sanitizedServiceScriptName}.txt" "result3_${sanitizedServiceScriptName}.txt")
+        local resultFile="result${bench}_${sanitizedServiceScriptName}.txt"
+
         bash "test_query${bench}.sh" "$graphqlEndpoint"
+
         # Warmup run
         bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
         sleep 1 # Give some time for apps to finish in-flight requests from warmup
@@ -46,47 +46,39 @@ function runBenchmark() {
         sleep 1
         bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
         sleep 1
-        # 3 benchmark runs
-        for resultFile in "${resultFiles[@]}"; do
-            echo "Running benchmark $bench for $serviceScript"
-            bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >"bench${bench}_${resultFile}"
-            if [ "$bench" == "1" ]; then
-                bench1Results+=("bench1_${resultFile}")
-            elif [ "$bench" == "2" ]; then
-                bench2Results+=("bench2_${resultFile}")
-            elif [ "$bench" == "3" ]; then
-                bench3Results+=("bench3_${resultFile}")
-            fi
-        done
+
+        # Benchmark run
+        echo "Running benchmark $bench for $serviceScript"
+        bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >"bench${bench}_${resultFile}"
     done
 }
 
 # Check if a service name is provided
 if [ $# -eq 0 ]; then
+    echo "Please provide a service name as an argument."
     echo "Usage: $0 <service_name>"
-    echo "Available services: apollo_server, caliban, netflix_dgs, gqlgen, tailcall, async_graphql, hasura, graphql_jit"
     exit 1
 fi
 
 service="$1"
+serviceScript="graphql/${service}/run.sh"
 
-# Validate the service name
-valid_services=("apollo_server" "caliban" "netflix_dgs" "gqlgen" "tailcall" "async_graphql" "hasura" "graphql_jit")
-if [[ ! " ${valid_services[@]} " =~ " ${service} " ]]; then
-    echo "Invalid service name. Available services: ${valid_services[*]}"
+# Check if the service script exists
+if [ ! -f "$serviceScript" ]; then
+    echo "Service script not found: $serviceScript"
     exit 1
 fi
 
-rm "results.md"
-
-# Kill the server on port 3000 and start nginx
+# Kill any existing server on port 3000
 killServerOnPort 3000
+
+# Run nginx
 sh nginx/run.sh
 
 # Run the benchmark for the specified service
-runBenchmark "graphql/${service}/run.sh"
+runBenchmark "$serviceScript"
 
-# Perform cleanup based on the service
+# Stop the service if it's Apollo Server or Hasura
 if [ "$service" == "apollo_server" ]; then
     cd graphql/apollo_server/
     npm stop
@@ -94,9 +86,3 @@ if [ "$service" == "apollo_server" ]; then
 elif [ "$service" == "hasura" ]; then
     bash "graphql/hasura/kill.sh"
 fi
-
-end_time=$(date +%s)
-duration=$((end_time - start_time))
-minutes=$((duration / 60))
-seconds=$((duration % 60))
-echo "$service :: Run_benchmark.sh >>> Total execution time: $minutes minutes and $seconds seconds"
