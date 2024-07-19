@@ -108,6 +108,9 @@ jobs:
           echo "End of Benchmark 2"
           echo ""
 
+      - name: Install gnuplot
+        run: sudo apt-get update && sudo apt-get install -y gnuplot
+
       - name: Analyze results
         run: |
           rm results.md
