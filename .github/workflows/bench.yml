@@ -47,7 +47,7 @@ jobs:
                 echo "Error: Invalid service name '${{ matrix.service }}'"
                 exit 1
             fi
-            if ! node run_benchmarks.js ${{ matrix.service }}; then
+            if ! ./run_benchmarks.sh ${{ matrix.service }}; then
                 echo "Error: Benchmark failed for ${{ matrix.service }}"
                 exit 1
             fi
