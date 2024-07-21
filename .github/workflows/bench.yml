@@ -30,7 +30,6 @@ jobs:
           push: never
           
       - name: set run
-        uses: devcontainers/ci@v0.3
         run: |
           bash ./graphql/${{ matrix.service }}/setup.sh
           echo "Setup completed for ${{ matrix.service }}"
