@@ -12,12 +12,13 @@ function killServerOnPort() {
   fi
 }
 
-# Function to run benchmark for a specific service
+# Function to run benchmark for a single service
 function runBenchmark() {
-    killServerOnPort 8000
-    sleep 5
     local serviceScript="$1"
     local benchmarks=(1 2 3)
+    
+    killServerOnPort 8000
+    sleep 5
     
     if [[ "$serviceScript" == *"hasura"* ]]; then
         bash "$serviceScript" # Run synchronously without background process
@@ -34,7 +35,6 @@ function runBenchmark() {
     
     for bench in "${benchmarks[@]}"; do
         local benchmarkScript="wrk/bench.sh"
-        # Replace / with _
         local sanitizedServiceScriptName=$(echo "$serviceScript" | tr '/' '_')
         local resultFile="result${bench}_${sanitizedServiceScriptName}.txt"
         
@@ -42,7 +42,7 @@ function runBenchmark() {
         
         # Warmup run
         bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
-        sleep 1 # Give some time for apps to finish in-flight requests from warmup
+        sleep 1
         bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
         sleep 1
         bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
@@ -52,37 +52,39 @@ function runBenchmark() {
         echo "Running benchmark $bench for $serviceScript"
         bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >"bench${bench}_${resultFile}"
     done
+    
+    # Stop the service
+    if [[ "$serviceScript" == *"apollo_server"* ]]; then
+        cd graphql/apollo_server/
+        npm stop
+        cd ../../
+    elif [[ "$serviceScript" == *"hasura"* ]]; then
+        bash "graphql/hasura/kill.sh"
+    else
+        killServerOnPort 8000
+    fi
 }
 
-# Check if a service name is provided
+# Main script execution
 if [ $# -eq 0 ]; then
-    echo "Please provide a service name as an argument."
-    echo "Usage: ./run_benchmarks.sh <service_name>"
+    echo "Usage: $0 <service_name>"
+    echo "Available services: apollo_server, caliban, netflix_dgs, gqlgen, tailcall, async_graphql, hasura, graphql_jit"
     exit 1
 fi
 
 service="$1"
-serviceScript="graphql/${service}/run.sh"
+service_script="graphql/${service}/run.sh"
 
-# Check if the service script exists
-if [ ! -f "$serviceScript" ]; then
-    echo "Service script not found: $serviceScript"
+if [ ! -f "$service_script" ]; then
+    echo "Error: Service script not found for $service"
     exit 1
 fi
 
-# Run nginx
 killServerOnPort 3000
 sh nginx/run.sh
 
-# Run benchmark for the specified service
-runBenchmark "$serviceScript"
+rm -f "results.md"
 
-# Stop the service if needed
-if [ "$service" == "apollo_server" ]; then
-    cd graphql/apollo_server/
-    npm stop
-    cd ../../
-elif [ "$service" == "hasura" ]; then
-    bash "graphql/hasura/kill.sh"
-fi
+runBenchmark "$service_script"
 
+echo "Benchmark completed for $service"
