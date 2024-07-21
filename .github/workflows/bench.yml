@@ -10,7 +10,7 @@ permissions:
   pull-requests: write
   issues: write
 jobs:
-  build:
+  benchmark:
     runs-on: ubuntu-latest
     if: github.event.head_commit.message != 'Update performance results in README.md'
     strategy:
@@ -23,26 +23,39 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Build devcontainer and run setup and benchmark
+      - name: Build devcontainer and run setup and benchmark Test**
         uses: devcontainers/ci@v0.3
         with:
           imageName: graphql-benchmarks
           push: never
           runCmd: |
+            echo "Running setup script for ${{ matrix.service }}"
+            if [ -f "./graphql/${{ matrix.service }}/setup.sh" ]; then
             bash ./graphql/${{ matrix.service }}/setup.sh
-            echo "Setup completed"
-
-            ./run_benchmarks.sh ${{ matrix.service }}
+            echo "Setup completed for ${{ matrix.service }}"
+            else
+              echo "No specific setup script found for ${{ matrix.service }}, running general setup"
+            fi
             
-
+            echo "Setup completed"
+            echo "Running benchmark for ${{ matrix.service }}"
+            chmod +x ./run_benchmarks.sh
+            valid_services=("apollo_server" "caliban" "netflix_dgs" "gqlgen" "tailcall" "async_graphql" "hasura" "graphql_jit")
+            if [[ ! " ${valid_services[@]} " =~ " ${{ matrix.service }} " ]]; then
+                echo "Error: Invalid service name '${{ matrix.service }}'"
+                exit 1
+            fi
+            if ! ./run_benchmarks.sh ${{ matrix.service }}; then
+                echo "Error: Benchmark failed for ${{ matrix.service }}"
+                exit 1
+            fi
+            echo "Benchmark completed for ${{ matrix.service }}"
       - name: List benchmark files
         run: |
           echo "Contents of current directory:"
           ls -la
           echo "Matching bench*.txt files:"
           ls -la bench*.txt || echo "No matching files found"
-
-
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
         with:
@@ -66,13 +79,34 @@ jobs:
       - name: List downloaded artifacts
         run: ls -la bench*.txt || echo "No matching files found"
 
+      - name: output of tailcall
+        run: |
+          echo "Benchmark 1"
+          cat ./bench1_result1_graphql_tailcall_run.sh.txt
+          cat ./bench1_result2_graphql_tailcall_run.sh.txt
+          cat ./bench1_result3_graphql_tailcall_run.sh.txt
+          echo "End of Becnhmark 1"
+          echo ""
+          echo "Benchmark 2"
+          cat ./bench2_result1_graphql_tailcall_run.sh.txt
+          cat ./bench2_result2_graphql_tailcall_run.sh.txt
+          cat ./bench2_result3_graphql_tailcall_run.sh.txt
+          echo "End of Becnhmark 2"
+          echo ""
+          echo "Becnhmark 3"
+          cat ./bench3_result1_graphql_tailcall_run.sh.txt
+          cat ./bench3_result2_graphql_tailcall_run.sh.txt
+          cat ./bench3_result3_graphql_tailcall_run.sh.txt
+          echo "End of Benchmark 2"
+          echo ""
       - name: Install gnuplot
         run: sudo apt-get update && sudo apt-get install -y gnuplot
 
       - name: Analyze results
         run: |
+          rm results.md
           bash run_analyze_script.sh
-
+          
       - name: Print benchmark results
         run: cat ./results.md
 
