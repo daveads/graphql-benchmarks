@@ -30,12 +30,13 @@ jobs:
           push: never
 
       - name: Setup script
-        runCmd: |
-            bash ./graphql/${{ matrix.service }}/setup.sh
+        run: |
+          bash ./graphql/${{ matrix.service }}/setup.sh
 
       - name: start benchmark
-        run:  bash run_benchmarks.sh ${{ matrix.service }}
-            
+        run: |
+          bash run_benchmarks.sh ${{ matrix.service }}
+      
       - name: List benchmark files
         run: |
           echo "Contents of current directory:"
