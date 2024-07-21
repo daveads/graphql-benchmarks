@@ -123,7 +123,7 @@ jobs:
               if [ ${#resultFiles[@]} -ne 0 ]; then
                   echo "Processing benchmark $bench results:"
                   ls bench${bench}*.txt || echo "No matching files found for bench${bench}*.txt"
-                  node analyze.js "${resultFiles[@]}"
+                  bash analyze.sh "${resultFiles[@]}"
               else
                   echo "No result files found for benchmark $bench"
               fi
