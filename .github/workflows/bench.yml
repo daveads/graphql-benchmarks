@@ -28,14 +28,17 @@ jobs:
         with:
           imageName: graphql-benchmarks
           push: never
-          runCmd: |
+          
+      - name: set run
+        uses: devcontainers/ci@v0.3
+        runCmd: |
             bash ./graphql/${{ matrix.service }}/setup.sh
             echo "Setup completed for ${{ matrix.service }}"
             
             bash run_benchmarks.sh ${{ matrix.service }}
             echo "Benchmark completed for ${{ matrix.service }}"
 
-      
+
       - name: List benchmark files
         run: |
           echo "Contents of current directory:"
