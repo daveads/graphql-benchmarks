@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+// run
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -169,10 +169,10 @@ sortedServers.forEach((server) => {
   resultsTable += `\n|| [${formattedServerNames[server]}] | \`${formattedReqSecs}\` | \`${formattedLatencies}\` | \`${relativePerformance}x\` |`;
 });
 
-fs.appendFileSync(resultsFile, resultsTable + "\n");
+fs.appendFileSync(resultsFile, resultsTable);
 
 if (whichBench === 3) {
-  fs.appendFileSync(resultsFile, "\n<!-- PERFORMANCE_RESULTS_END -->");
+  fs.appendFileSync(resultsFile, "\n\n<!-- PERFORMANCE_RESULTS_END -->");
   
   const finalResults = fs
     .readFileSync(resultsFile, "utf-8")
