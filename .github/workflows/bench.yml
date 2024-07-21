@@ -113,21 +113,7 @@ jobs:
 
       - name: Analyze results
         run: |
-          rm results.md
-          # Loop through benchmarks 1, 2, and 3
-          for bench in 1 2 3; do
-              # Use a wildcard to find all matching result files
-              resultFiles=(bench${bench}_*.txt)
-              
-              # Check if any matching files were found
-              if [ ${#resultFiles[@]} -ne 0 ]; then
-                  echo "Processing benchmark $bench results:"
-                  ls bench${bench}*.txt || echo "No matching files found for bench${bench}*.txt"
-                  node analyze.js "${resultFiles[@]}"
-              else
-                  echo "No result files found for benchmark $bench"
-              fi
-          done
+          ./run_analyze_script.sh
 
       - name: Print benchmark results
         run: cat ./results.md
