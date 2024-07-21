@@ -10,7 +10,7 @@ permissions:
   pull-requests: write
   issues: write
 jobs:
-  benchmark:
+  build:
     runs-on: ubuntu-latest
     if: github.event.head_commit.message != 'Update performance results in README.md'
     strategy:
@@ -69,12 +69,6 @@ jobs:
           path: bench*.txt
 
 
-  analyze:
-    needs: benchmark
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout (GitHub)
-        uses: actions/checkout@v4
 
       - name: Download all benchmark results
         uses: actions/download-artifact@v3
