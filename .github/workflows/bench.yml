@@ -28,15 +28,16 @@ jobs:
         with:
           imageName: graphql-benchmarks
           push: never
-          
-      - name: set run
+
+      - name: Setup service
         run: |
           bash ./graphql/${{ matrix.service }}/setup.sh
           echo "Setup completed for ${{ matrix.service }}"
-          
+      
+      - name: Run benchmark
+        run: |
           bash run_benchmarks.sh ${{ matrix.service }}
           echo "Benchmark completed for ${{ matrix.service }}"
-
 
       - name: List benchmark files
         run: |
