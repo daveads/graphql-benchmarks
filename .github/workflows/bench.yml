@@ -23,7 +23,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Build devcontainer and run setup and benchmark Test**
+      - name: Build devcontainer
         uses: devcontainers/ci@v0.3
         with:
           imageName: graphql-benchmarks
@@ -35,13 +35,12 @@ jobs:
 
       - name: start benchmark
         run: |
+          ls -la
           bash run_benchmarks.sh ${{ matrix.service }}
       
       - name: List benchmark files
         run: |
           echo "Contents of current directory:"
-          ls -la
-          echo "Matching bench*.txt files:"
           ls -la bench*.txt || echo "No matching files found"
       
       - name: Upload benchmark results
@@ -66,9 +65,6 @@ jobs:
 
       - name: List downloaded artifacts
         run: ls -la bench*.txt || echo "No matching files found"
-
-      - name: Install gnuplot
-        run: sudo apt-get update && sudo apt-get install -y gnuplot
 
       - name: Analyze results
         run: |

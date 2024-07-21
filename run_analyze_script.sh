@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo apt-get update && sudo apt-get install -y gnuplot
+
 rm results.md
 
 for bench in 1 2 3; do
