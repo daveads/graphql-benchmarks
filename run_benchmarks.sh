@@ -85,8 +85,3 @@ if [ "$service" == "apollo_server" ]; then
 elif [ "$service" == "hasura" ]; then
     bash "graphql/hasura/kill.sh"
 fi
-
-# Analyze results
-bash analyze.sh bench1_result1_${serviceScript}.txt bench1_result2_${serviceScript}.txt bench1_result3_${serviceScript}.txt
-bash analyze.sh bench2_result1_${serviceScript}.txt bench2_result2_${serviceScript}.txt bench2_result3_${serviceScript}.txt
-bash analyze.sh bench3_result1_${serviceScript}.txt bench3_result2_${serviceScript}.txt bench3_result3_${serviceScript}.txt
