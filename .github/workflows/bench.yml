@@ -28,35 +28,30 @@ jobs:
         with:
           imageName: graphql-benchmarks
           push: never
+          runCmd: |
+            echo "Running setup script for ${{ matrix.service }}"
+            if [ -f "./graphql/${{ matrix.service }}/setup.sh" ]; then
+            bash ./graphql/${{ matrix.service }}/setup.sh
+            echo "Setup completed for ${{ matrix.service }}"
 
-      - name: steup install 
-        runCmd: |
-          echo "Running setup script for ${{ matrix.service }}"
-          if [ -f "./graphql/${{ matrix.service }}/setup.sh" ]; then
-          bash ./graphql/${{ matrix.service }}/setup.sh
-          echo "Setup completed for ${{ matrix.service }}"
+            else
+              echo "No specific setup script found for ${{ matrix.service }}, running general setup"
+            fi
+            
 
-          else
-            echo "No specific setup script found for ${{ matrix.service }}, running general setup"
-          fi
-          
-
-          echo "Setup completed"
-
-      - name: running benchmark
-        runCmd: | 
-          echo "Running benchmark for ${{ matrix.service }}"
-          chmod +x ./run_benchmarks.sh
-          valid_services=("apollo_server" "caliban" "netflix_dgs" "gqlgen" "tailcall" "async_graphql" "hasura" "graphql_jit")
-          if [[ ! " ${valid_services[@]} " =~ " ${{ matrix.service }} " ]]; then
-              echo "Error: Invalid service name '${{ matrix.service }}'"
-              exit 1
-          fi
-          if ! ./run_benchmarks.sh ${{ matrix.service }}; then
-              echo "Error: Benchmark failed for ${{ matrix.service }}"
-              exit 1
-          fi
-          echo "Benchmark completed for ${{ matrix.service }}"
+            echo "Setup completed"
+            echo "Running benchmark for ${{ matrix.service }}"
+            chmod +x ./run_benchmarks.sh
+            valid_services=("apollo_server" "caliban" "netflix_dgs" "gqlgen" "tailcall" "async_graphql" "hasura" "graphql_jit")
+            if [[ ! " ${valid_services[@]} " =~ " ${{ matrix.service }} " ]]; then
+                echo "Error: Invalid service name '${{ matrix.service }}'"
+                exit 1
+            fi
+            if ! ./run_benchmarks.sh ${{ matrix.service }}; then
+                echo "Error: Benchmark failed for ${{ matrix.service }}"
+                exit 1
+            fi
+            echo "Benchmark completed for ${{ matrix.service }}"
 
 
       - name: List benchmark files
