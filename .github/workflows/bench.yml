@@ -35,7 +35,7 @@ jobs:
 
       - name: start benchmark
         run: |
-          ls -la
+          ls -la wrk
           bash run_benchmarks.sh ${{ matrix.service }}
       
       - name: List benchmark files
