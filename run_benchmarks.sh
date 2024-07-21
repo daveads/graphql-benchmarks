@@ -1,6 +1,6 @@
 #!/bin/bash
-# Start services and run benchmarks
 
+# Function to kill server on a specific port
 function killServerOnPort() {
   local port="$1"
   local pid=$(lsof -t -i:"$port")
@@ -12,13 +12,7 @@ function killServerOnPort() {
   fi
 }
 
-bench1Results=()
-bench2Results=()
-bench3Results=()
-
-killServerOnPort 3000
-sh nginx/run.sh
-
+# Function to run benchmark for a specific service
 function runBenchmark() {
     killServerOnPort 8000
     sleep 5
@@ -42,9 +36,10 @@ function runBenchmark() {
         local benchmarkScript="wrk/bench.sh"
         # Replace / with _
         local sanitizedServiceScriptName=$(echo "$serviceScript" | tr '/' '_')
-        local resultFiles=("result1_${sanitizedServiceScriptName}.txt" "result2_${sanitizedServiceScriptName}.txt" "result3_${sanitizedServiceScriptName}.txt")
+        local resultFile="result${bench}_${sanitizedServiceScriptName}.txt"
         
         bash "test_query${bench}.sh" "$graphqlEndpoint"
+        
         # Warmup run
         bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
         sleep 1 # Give some time for apps to finish in-flight requests from warmup
@@ -53,38 +48,36 @@ function runBenchmark() {
         bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
         sleep 1
         
-        # 3 benchmark runs
-        for resultFile in "${resultFiles[@]}"; do
-            echo "Running benchmark $bench for $serviceScript"
-            bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >"bench${bench}_${resultFile}"
-            if [ "$bench" == "1" ]; then
-                bench1Results+=("bench1_${resultFile}")
-            elif [ "$bench" == "2" ]; then
-                bench2Results+=("bench2_${resultFile}")
-            elif [ "$bench" == "3" ]; then
-                bench3Results+=("bench3_${resultFile}")
-            fi
-        done
+        # Actual benchmark run
+        echo "Running benchmark $bench for $serviceScript"
+        bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >"bench${bench}_${resultFile}"
     done
 }
 
+# Check if a service name is provided
 if [ $# -eq 0 ]; then
-    echo "Usage: $0 <service_name>"
-    echo "Available services: apollo_server, caliban, netflix_dgs, gqlgen, tailcall, async_graphql, hasura, graphql_jit"
+    echo "Please provide a service name as an argument."
+    echo "Usage: ./run_benchmarks.sh <service_name>"
     exit 1
 fi
 
 service="$1"
-valid_services=("apollo_server" "caliban" "netflix_dgs" "gqlgen" "tailcall" "async_graphql" "hasura" "graphql_jit")
+serviceScript="graphql/${service}/run.sh"
 
-if [[ ! " ${valid_services[@]} " =~ " ${service} " ]]; then
-    echo "Invalid service name. Available services: ${valid_services[*]}"
+# Check if the service script exists
+if [ ! -f "$serviceScript" ]; then
+    echo "Service script not found: $serviceScript"
     exit 1
 fi
 
-rm "results.md"
-runBenchmark "graphql/${service}/run.sh"
+# Run nginx
+killServerOnPort 3000
+sh nginx/run.sh
 
+# Run benchmark for the specified service
+runBenchmark "$serviceScript"
+
+# Stop the service if needed
 if [ "$service" == "apollo_server" ]; then
     cd graphql/apollo_server/
     npm stop
@@ -92,3 +85,4 @@ if [ "$service" == "apollo_server" ]; then
 elif [ "$service" == "hasura" ]; then
     bash "graphql/hasura/kill.sh"
 fi
+
