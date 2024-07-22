@@ -119,12 +119,5 @@ async function main() {
       }
     });
 
-    [1, 2, 3].forEach(bench => {
-      execSync(`node analyze.js ${benchResults[bench].join(' ')}`);
-    });
-  } catch (error) {
-    console.error(`Error running benchmark for ${serviceName}:`, error);
-  }
-}
-
+    
 main().catch(error => console.error('An error occurred:', error));
