@@ -1,18 +1,18 @@
 #!/bin/bash
 
-echo "Benchmark 1"
+echo "graphql_jit Benchmark 1"
 cat ./bench1_result1_graphql_graphql_jit_run.sh.txt
 cat ./bench1_result2_graphql_graphql_jit_run.sh.txt
 cat ./bench1_result3_graphql_graphql_jit_run.sh.txt
 echo "End of Becnhmark 1"
 echo ""
-echo "Benchmark 2"
+echo "graphql_jit Benchmark 2"
 cat ./bench2_result1_graphql_graphql_jit_run.sh.txt
 cat ./bench2_result2_graphql_graphql_jit_run.sh.txt
 cat ./bench2_result3_graphql_graphql_jit_run.sh.txt
 echo "End of Becnhmark 2"
 echo ""
-echo "Becnhmark 3"
+echo "graphql_jit Becnhmark 3"
 cat ./bench3_result1_graphql_graphql_jit_run.sh.txt
 cat ./bench3_result2_graphql_graphql_jit_run.sh.txt
 cat ./bench3_result3_graphql_graphql_jit_run.sh.txt
@@ -20,19 +20,19 @@ echo "End of Benchmark 3"
 echo ""
 
 
-echo "Benchmark 1"
+echo "tailcall Benchmark 1"
 cat ./bench1_result1_graphql_tailcall_run.sh.txt
 cat ./bench1_result2_graphql_tailcall_run.sh.txt
 cat ./bench1_result3_graphql_tailcall_run.sh.txt
 echo "End of Becnhmark 1"
 echo ""
-echo "Benchmark 2"
+echo "tailcall Benchmark 2"
 cat ./bench2_result1_graphql_tailcall_run.sh.txt
 cat ./bench2_result2_graphql_tailcall_run.sh.txt
 cat ./bench2_result3_graphql_tailcall_run.sh.txt
 echo "End of Becnhmark 2"
 echo ""
-echo "Becnhmark 3"
+echo "tailcall Becnhmark 3"
 cat ./bench3_result1_graphql_tailcall_run.sh.txt
 cat ./bench3_result2_graphql_tailcall_run.sh.txt
 cat ./bench3_result3_graphql_tailcall_run.sh.txt
