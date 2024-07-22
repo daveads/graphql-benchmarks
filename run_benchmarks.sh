@@ -82,6 +82,25 @@ total_start_time=$(date +%s)
 for service in "apollo_server" "caliban" "netflix_dgs" "gqlgen" "tailcall" "async_graphql" "hasura" "graphql_jit"; do
   runBenchmark "graphql/${service}/run.sh"
 
+  echo "Benchmark 1"
+  cat ./bench1_result1_graphql_${service}_run.sh.txt
+  cat ./bench1_result2_graphql_${service}_run.sh.txt
+  cat ./bench1_result3_graphql_${service}_run.sh.txt
+  echo "End of Becnhmark 1"
+  echo ""
+  echo "Benchmark 2"
+  cat ./bench2_result1_graphql_${service}_run.sh.txt
+  cat ./bench2_result2_graphql_${service}_run.sh.txt
+  cat ./bench2_result3_graphql_${service}_run.sh.txt
+  echo "End of Becnhmark 2"
+  echo ""
+  echo "Becnhmark 3"
+  cat ./bench3_result1_graphql_${service}_run.sh.txt
+  cat ./bench3_result2_graphql_${service}_run.sh.txt
+  cat ./bench3_result3_graphql_${service}_run.sh.txt
+  echo "End of Benchmark 2"
+  echo ""
+
   if [ "$service" == "apollo_server" ]; then
     cd graphql/apollo_server/
     npm stop
@@ -99,26 +118,6 @@ echo "Total time to execute all services: $total_execution_time seconds"
 echo "${bench1Results[@]}"
 echo "${bench2Results[@]}"
 echo "${bench3Results[@]}"
-
-
-echo "Benchmark 1"
-cat ./bench1_result1_graphql_tailcall_run.sh.txt
-cat ./bench1_result2_graphql_tailcall_run.sh.txt
-cat ./bench1_result3_graphql_tailcall_run.sh.txt
-echo "End of Benchmark 1"
-echo ""
-echo "Benchmark 2"
-cat ./bench2_result1_graphql_tailcall_run.sh.txt
-cat ./bench2_result2_graphql_tailcall_run.sh.txt
-cat ./bench2_result3_graphql_tailcall_run.sh.txt
-echo "End of Benchmark 2"
-echo ""
-echo "Benchmark 3"
-cat ./bench3_result1_graphql_tailcall_run.sh.txt
-cat ./bench3_result2_graphql_tailcall_run.sh.txt
-cat ./bench3_result3_graphql_tailcall_run.sh.txt
-echo "End of Benchmark 3"
-echo ""
 
 
 bash analyze.sh "${bench1Results[@]}"
