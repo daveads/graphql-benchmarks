@@ -32,7 +32,7 @@ jobs:
             bash ./graphql/${{ matrix.service }}/setup.sh
             echo "Setup completed for ${{ matrix.service }}"
             
-            node run_benchmarks.js ${{ matrix.service }}
+            bash run_benchmarks.sh ${{ matrix.service }}
             echo "Benchmark completed for ${{ matrix.service }}"
 
       - name: List benchmark files

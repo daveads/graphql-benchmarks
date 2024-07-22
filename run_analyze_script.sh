@@ -13,7 +13,7 @@ for bench in 1 2 3; do
     echo "Processing files for bench${bench}:"
     
     # Construct the command for each benchmark
-    cmd="node analyze.js"
+    cmd="bash analyze.sh"
     
     # Loop through each service 
     for service in "${services[@]}"; do
