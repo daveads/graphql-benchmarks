@@ -1,5 +1,45 @@
 #!/bin/bash
 
+echo "Benchmark 1"
+cat ./bench1_result1_graphql_graphql_jit_run.sh.txt
+cat ./bench1_result2_graphql_graphql_jit_run.sh.txt
+cat ./bench1_result3_graphql_graphql_jit_run.sh.txt
+echo "End of Becnhmark 1"
+echo ""
+echo "Benchmark 2"
+cat ./bench2_result1_graphql_graphql_jit_run.sh.txt
+cat ./bench2_result2_graphql_graphql_jit_run.sh.txt
+cat ./bench2_result3_graphql_graphql_jit_run.sh.txt
+echo "End of Becnhmark 2"
+echo ""
+echo "Becnhmark 3"
+cat ./bench3_result1_graphql_graphql_jit_run.sh.txt
+cat ./bench3_result2_graphql_graphql_jit_run.sh.txt
+cat ./bench3_result3_graphql_graphql_jit_run.sh.txt
+echo "End of Benchmark 3"
+echo ""
+
+
+echo "Benchmark 1"
+cat ./bench1_result1_graphql_tailcall_run.sh.txt
+cat ./bench1_result2_graphql_tailcall_run.sh.txt
+cat ./bench1_result3_graphql_tailcall_run.sh.txt
+echo "End of Becnhmark 1"
+echo ""
+echo "Benchmark 2"
+cat ./bench2_result1_graphql_tailcall_run.sh.txt
+cat ./bench2_result2_graphql_tailcall_run.sh.txt
+cat ./bench2_result3_graphql_tailcall_run.sh.txt
+echo "End of Becnhmark 2"
+echo ""
+echo "Becnhmark 3"
+cat ./bench3_result1_graphql_tailcall_run.sh.txt
+cat ./bench3_result2_graphql_tailcall_run.sh.txt
+cat ./bench3_result3_graphql_tailcall_run.sh.txt
+echo "End of Benchmark 3"
+echo ""
+
+
 # Install gnuplot
 sudo apt-get update && sudo apt-get install -y gnuplot
 echo "see 1 >>> $1"
