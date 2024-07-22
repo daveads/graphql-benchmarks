@@ -45,7 +45,7 @@ function runBenchmark(serviceScript) {
 
   for (const bench of benchmarks) {
     const benchmarkScript = 'wrk/bench.sh';
-    const sanitizedServiceScriptName = path.basename(serviceScript).replace('/', '_');
+    const sanitizedServiceScriptName = serviceScript.replace(/\//g, '_');
     const resultFiles = [
       `result1_${sanitizedServiceScriptName}.txt`,
       `result2_${sanitizedServiceScriptName}.txt`,
@@ -65,14 +65,15 @@ function runBenchmark(serviceScript) {
     // 3 benchmark runs
     for (const resultFile of resultFiles) {
       console.log(`Running benchmark ${bench} for ${serviceScript}`);
-      execSync(`bash ${benchmarkScript} ${graphqlEndpoint} ${bench} > bench${bench}_${resultFile}`);
+      const outputFile = `bench${bench}_${resultFile}`;
+      execSync(`bash ${benchmarkScript} ${graphqlEndpoint} ${bench} > ${outputFile}`);
       
       if (bench === 1) {
-        bench1Results.push(`bench1_${resultFile}`);
+        bench1Results.push(outputFile);
       } else if (bench === 2) {
-        bench2Results.push(`bench2_${resultFile}`);
+        bench2Results.push(outputFile);
       } else if (bench === 3) {
-        bench3Results.push(`bench3_${resultFile}`);
+        bench3Results.push(outputFile);
       }
     }
   }
@@ -93,7 +94,9 @@ if (!validServices.includes(service)) {
   process.exit(1);
 }
 
-fs.unlinkSync('results.md');
+if (fs.existsSync('results.md')) {
+  fs.unlinkSync('results.md');
+}
 
 runBenchmark(`graphql/${service}/run.sh`);
 
