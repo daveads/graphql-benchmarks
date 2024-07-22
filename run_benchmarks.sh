@@ -91,7 +91,27 @@ fi
 
 
 runBenchmark "graphql/${service}/run.sh"
-    
+
+
+echo "Benchmark 1"
+cat ./bench1_result1_graphql_${service}_run.sh.txt
+cat ./bench1_result2_graphql_${service}_run.sh.txt
+cat ./bench1_result3_graphql_${service}_run.sh.txt
+echo "End of Becnhmark 1"
+echo ""
+echo "Benchmark 2"
+cat ./bench2_result1_graphql_${service}_run.sh.txt
+cat ./bench2_result2_graphql_${service}_run.sh.txt
+cat ./bench2_result3_graphql_${service}_run.sh.txt
+echo "End of Becnhmark 2"
+echo ""
+echo "Becnhmark 3"
+cat ./bench3_result1_graphql_${service}_run.sh.txt
+cat ./bench3_result2_graphql_${service}_run.sh.txt
+cat ./bench3_result3_graphql_${service}_run.sh.txt
+echo "End of Benchmark 2"
+echo ""
+
 if [ "$service" == "apollo_server" ]; then
     cd graphql/apollo_server/
     npm stop
