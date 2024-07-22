@@ -212,7 +212,7 @@ if (whichBench === 3) {
 
     const finalResults = fs
       .readFileSync(resultsFile, "utf-8")
-      .replace(/(\r\n|\n|\r)/gm, "\\n");
+      .replace(/\\/g, '');  // Remove backslashes
 
     const readmePath = "README.md";
     let readmeContent = fs.readFileSync(readmePath, "utf-8");
@@ -227,6 +227,7 @@ if (whichBench === 3) {
       readmeContent += `\n${finalResults}`;
     }
     fs.writeFileSync(readmePath, readmeContent);
+    console.log("README.md updated successfully");
   } catch (error) {
     console.error(`Error updating README: ${error.message}`);
   }
