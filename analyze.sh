@@ -1,44 +1,5 @@
 #!/bin/bash
 
-echo "graphql_jit Benchmark 1"
-cat ./bench1_result1_graphql_graphql_jit_run.sh.txt
-cat ./bench1_result2_graphql_graphql_jit_run.sh.txt
-cat ./bench1_result3_graphql_graphql_jit_run.sh.txt
-echo "End of Becnhmark 1"
-echo ""
-echo "graphql_jit Benchmark 2"
-cat ./bench2_result1_graphql_graphql_jit_run.sh.txt
-cat ./bench2_result2_graphql_graphql_jit_run.sh.txt
-cat ./bench2_result3_graphql_graphql_jit_run.sh.txt
-echo "End of Becnhmark 2"
-echo ""
-echo "graphql_jit Becnhmark 3"
-cat ./bench3_result1_graphql_graphql_jit_run.sh.txt
-cat ./bench3_result2_graphql_graphql_jit_run.sh.txt
-cat ./bench3_result3_graphql_graphql_jit_run.sh.txt
-echo "End of Benchmark 3"
-echo ""
-
-
-echo "tailcall Benchmark 1"
-cat ./bench1_result1_graphql_tailcall_run.sh.txt
-cat ./bench1_result2_graphql_tailcall_run.sh.txt
-cat ./bench1_result3_graphql_tailcall_run.sh.txt
-echo "End of Becnhmark 1"
-echo ""
-echo "tailcall Benchmark 2"
-cat ./bench2_result1_graphql_tailcall_run.sh.txt
-cat ./bench2_result2_graphql_tailcall_run.sh.txt
-cat ./bench2_result3_graphql_tailcall_run.sh.txt
-echo "End of Becnhmark 2"
-echo ""
-echo "tailcall Becnhmark 3"
-cat ./bench3_result1_graphql_tailcall_run.sh.txt
-cat ./bench3_result2_graphql_tailcall_run.sh.txt
-cat ./bench3_result3_graphql_tailcall_run.sh.txt
-echo "End of Benchmark 3"
-echo ""
-
 # Install gnuplot
 sudo apt-get update && sudo apt-get install -y gnuplot
 echo "see 1 >>> $1"
@@ -47,15 +8,11 @@ echo "see 2 >>> $2"
 function extractMetric() {
   local file="$1"
   local metric="$2"
-  local result=$(grep "$metric" "$file" | awk '{print $2}' | sed 's/ms//')
-  echo "DEBUG: Extracted $metric from $file: $result" >&2
-  echo "$result"
+  grep "$metric" "$file" | awk '{print $2}' | sed 's/ms//'
 }
 
 function average() {
-  local result=$(echo "$@" | awk '{for(i=1;i<=NF;i++) s+=$i; print s/NF}')
-  echo "DEBUG: Calculated average of $@: $result" >&2
-  echo "$result"
+  echo "$@" | awk '{for(i=1;i<=NF;i++) s+=$i; print s/NF}'
 }
 
 declare -A formattedServerNames
@@ -75,30 +32,18 @@ resultFiles=("$@")
 declare -A avgReqSecs
 declare -A avgLatencies
 
-echo "DEBUG: Number of result files: ${#resultFiles[@]}" >&2
-echo "DEBUG: Result files: ${resultFiles[@]}" >&2
-
 # Extract metrics and calculate averages
 for idx in "${!servers[@]}"; do
-  server=${servers[$idx]}
-  echo "DEBUG: Processing server: $server" >&2
   startIdx=$((idx * 3))
   reqSecVals=()
   latencyVals=()
   for j in 0 1 2; do
     fileIdx=$((startIdx + j))
-    echo "DEBUG: Processing file: ${resultFiles[$fileIdx]}" >&2
-    reqSecVal=$(extractMetric "${resultFiles[$fileIdx]}" "Requests/sec")
-    latencyVal=$(extractMetric "${resultFiles[$fileIdx]}" "Latency")
-    reqSecVals+=($reqSecVal)
-    latencyVals+=($latencyVal)
+    reqSecVals+=($(extractMetric "${resultFiles[$fileIdx]}" "Requests/sec"))
+    latencyVals+=($(extractMetric "${resultFiles[$fileIdx]}" "Latency"))
   done
-  echo "DEBUG: Request/sec values for $server: ${reqSecVals[@]}" >&2
-  echo "DEBUG: Latency values for $server: ${latencyVals[@]}" >&2
-  avgReqSecs[$server]=$(average "${reqSecVals[@]}")
-  avgLatencies[$server]=$(average "${latencyVals[@]}")
-  echo "DEBUG: Average Request/sec for $server: ${avgReqSecs[$server]}" >&2
-  echo "DEBUG: Average Latency for $server: ${avgLatencies[$server]}" >&2
+  avgReqSecs[${servers[$idx]}]=$(average "${reqSecVals[@]}")
+  avgLatencies[${servers[$idx]}]=$(average "${latencyVals[@]}")
 done
 
 # Generating data files for gnuplot
@@ -121,8 +66,6 @@ if [[ $1 == bench2* ]]; then
 elif [[ $1 == bench3* ]]; then
     whichBench=3
 fi
-
-echo "DEBUG: Which benchmark: $whichBench" >&2
 
 reqSecHistogramFile="req_sec_histogram${whichBench}.png"
 latencyHistogramFile="latency_histogram${whichBench}.png"
@@ -165,11 +108,9 @@ done
 # Get the servers sorted by RPS in descending order
 IFS=$'\n' sortedServers=($(for server in "${!serverRPS[@]}"; do echo "$server ${serverRPS[$server]}"; done | sort -rn -k2 | cut -d' ' -f1))
 
-echo "DEBUG: Sorted servers: ${sortedServers[@]}" >&2
+echo "Sorted servers: ${sortedServers[@]}"
 lastServer="${sortedServers[-1]}"
 lastServerReqSecs=${avgReqSecs[$lastServer]}
-
-echo "DEBUG: Last server: $lastServer, Last server Req/Sec: $lastServerReqSecs" >&2
 
 # Start building the resultsTable
 if [[ $whichBench == 1 ]]; then
@@ -187,8 +128,6 @@ for server in "${sortedServers[@]}"; do
     # Calculate the relative performance
     relativePerformance=$(echo "${avgReqSecs[$server]} $lastServerReqSecs" | awk '{printf "%.2f", $1 / $2}')
 
-    echo "DEBUG: Server: $server, Req/Sec: $formattedReqSecs, Latency: $formattedLatencies, Relative: $relativePerformance" >&2
-
     resultsTable+="\n|| [${formattedServerNames[$server]}] | \`${formattedReqSecs}\` | \`${formattedLatencies}\` | \`${relativePerformance}x\` |"
 done
 
@@ -196,11 +135,12 @@ if [[ $whichBench == 3 ]]; then
     resultsTable+="\n\n<!-- PERFORMANCE_RESULTS_END -->"
 fi
 
-echo "DEBUG: resultsTable: $resultsTable" >&2
+echo "resultsTable: $resultsTable"
 
 # Print the results table in a new file
 resultsFile="results.md"
 echo -e $resultsTable >> $resultsFile
+
 
 if [[ $whichBench == 3 ]]; then
     finalResults=$(printf '%s\n' "$(cat $resultsFile)" | sed 's/$/\\n/'| tr -d '\n')
