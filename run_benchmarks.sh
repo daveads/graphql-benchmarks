@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Start services and run benchmarks
+# Function to kill server on a specific port
 function killServerOnPort() {
     local port="$1"
     local pid=$(lsof -t -i:"$port")
@@ -12,25 +12,37 @@ function killServerOnPort() {
     fi
 }
 
-bench1Results=()
-bench2Results=()
-bench3Results=()
+# Function to run a single benchmark
+function runSingleBenchmark() {
+    local serviceScript="$1"
+    local bench="$2"
+    local graphqlEndpoint="$3"
+    local benchmarkScript="wrk/bench.sh"
+    local sanitizedServiceScriptName=$(echo "$serviceScript" | tr '/' '_')
+    local resultFile="bench${bench}_result_${sanitizedServiceScriptName}.txt"
 
-killServerOnPort 3000
-sh nginx/run.sh
+    bash "test_query${bench}.sh" "$graphqlEndpoint"
+    
+    # Warmup run
+    bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
+    sleep 1
+    
+    # Actual benchmark run
+    echo "Running benchmark $bench for $serviceScript"
+    bash "$benchmarkScript" "$graphqlEndpoint" "$bench" > "$resultFile"
+}
 
-function runBenchmark() {
+# Function to run all benchmarks for a service
+function runBenchmarks() {
+    local serviceScript="$1"
     killServerOnPort 8000
     sleep 5
-    local serviceScript="$1"
-    local benchmarks=(1 2 3)
 
     if [[ "$serviceScript" == *"hasura"* ]]; then
         bash "$serviceScript" # Run synchronously without background process
     else
         bash "$serviceScript" & # Run in daemon mode
     fi
-
     sleep 15 # Give some time for the service to start up
 
     local graphqlEndpoint="http://localhost:8000/graphql"
@@ -39,42 +51,16 @@ function runBenchmark() {
     fi
 
     # Run benchmarks in parallel
-    for bench in "${benchmarks[@]}"; do
-        local benchmarkScript="wrk/bench.sh"
-        local sanitizedServiceScriptName=$(echo "$serviceScript" | tr '/' '_')
-        local resultFiles=("result1_${sanitizedServiceScriptName}.txt" "result2_${sanitizedServiceScriptName}.txt" "result3_${sanitizedServiceScriptName}.txt")
-        
-        bash "test_query${bench}.sh" "$graphqlEndpoint"
-        
-        # Warmup run
-        bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null &
-        sleep 1
-        
-        # 3 benchmark runs in parallel
-        for resultFile in "${resultFiles[@]}"; do
-            echo "Running benchmark $bench for $serviceScript"
-            bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >"bench${bench}_${resultFile}" &
-        done
-    done
+    parallel --jobs 3 runSingleBenchmark "$serviceScript" {} "$graphqlEndpoint" ::: 1 2 3
 
-    # Wait for all background processes to finish
-    wait
-
-    # Collect results
-    for bench in "${benchmarks[@]}"; do
-        for resultFile in bench${bench}_result*_${sanitizedServiceScriptName}.txt; do
-            if [ "$bench" == "1" ]; then
-                bench1Results+=("$resultFile")
-            elif [ "$bench" == "2" ]; then
-                bench2Results+=("$resultFile")
-            elif [ "$bench" == "3" ]; then
-                bench3Results+=("$resultFile")
-            fi
-        done
-    done
+    if [[ "$serviceScript" == *"apollo_server"* ]]; then
+        cd graphql/apollo_server/
+        npm stop
+        cd ../../
+    elif [[ "$serviceScript" == *"hasura"* ]]; then
+        bash "graphql/hasura/kill.sh"
+    fi
 }
-
-rm "results.md"
 
 # Main script
 if [ $# -eq 0 ]; then
@@ -85,39 +71,21 @@ fi
 
 service="$1"
 valid_services=("apollo_server" "caliban" "netflix_dgs" "gqlgen" "tailcall" "async_graphql" "hasura" "graphql_jit")
-
 if [[ ! " ${valid_services[@]} " =~ " ${service} " ]]; then
     echo "Invalid service name. Available services: ${valid_services[*]}"
     exit 1
 fi
 
-runBenchmark "graphql/${service}/run.sh"
+rm -f "results.md"
+killServerOnPort 3000
+sh nginx/run.sh
 
-echo "Benchmark 1"
-for result in "${bench1Results[@]}"; do
-    cat "./$result"
+runBenchmarks "graphql/${service}/run.sh"
+
+# Display results
+for bench in 1 2 3; do
+    echo "Benchmark $bench"
+    cat ./bench${bench}_result_graphql_${service}_run.sh.txt
+    echo "End of Benchmark $bench"
+    echo ""
 done
-echo "End of Benchmark 1"
-echo ""
-
-echo "Benchmark 2"
-for result in "${bench2Results[@]}"; do
-    cat "./$result"
-done
-echo "End of Benchmark 2"
-echo ""
-
-echo "Benchmark 3"
-for result in "${bench3Results[@]}"; do
-    cat "./$result"
-done
-echo "End of Benchmark 3"
-echo ""
-
-if [ "$service" == "apollo_server" ]; then
-    cd graphql/apollo_server/
-    npm stop
-    cd ../../
-elif [ "$service" == "hasura" ]; then
-    bash "graphql/hasura/kill.sh"
-fi
