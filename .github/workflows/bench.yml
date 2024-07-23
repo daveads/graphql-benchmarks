@@ -4,18 +4,16 @@ on:
     types: [assigned, opened, synchronize, reopened, edited]
   push:
     branches: 
-      - Test_bench
+      - diff
 permissions:
   contents: write
   pull-requests: write
   issues: write
 jobs:
-  benchmark:
+  build-job:
     runs-on: ubuntu-latest
     if: github.event.head_commit.message != 'Update performance results in README.md'
-    strategy:
-      matrix:
-        service: [apollo_server, caliban, netflix_dgs, gqlgen, tailcall, async_graphql, hasura, graphql_jit]
+    
     steps:
       - name: Checkout (GitHub)
         uses: actions/checkout@v4
@@ -23,17 +21,52 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Build devcontainer
-        uses: devcontainers/ci@v0.3
+
+      - name: Setup docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build docker image
+        uses: docker/build-push-action@v6
         with:
-          imageName: graphql-benchmarks
-          push: never
-          runCmd: |
-            bash ./graphql/${{ matrix.service }}/setup.sh
-            echo "Setup completed for ${{ matrix.service }}"
-            
-            node run_benchmarks.js ${{ matrix.service }}
-            echo "Benchmark completed for ${{ matrix.service }}"
+          context: .
+          file: ./.devcontainer/Dockerfile
+          tags: graphql-benchmarks:v1
+          outputs : type=docker,dest=/tmp/graphql-benchmarks.tar
+
+      - name: Upload docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphql-benchmarks
+          path: /tmp/graphql-benchmarks.tar
+
+
+  benchmark-job:
+    needs: build-job
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [apollo_server, caliban, netflix_dgs, gqlgen, tailcall, async_graphql, hasura, graphql_jit]
+    
+    steps:
+      - name: Checkout (GitHub)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+      
+      - name: Download docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: graphql-benchmarks
+          path: /tmp/
+
+      - name: Load Docker image and Run benchmarks
+        run: |
+          docker load -i /tmp/graphql-benchmarks.tar
+          docker run --rm \
+          -v $PWD:/workspace \
+          graphql-benchmarks:v1 \
+          bash -c "systemctl start docker.service && sleep 10 & cd /workspace && ./graphql/${{ matrix.service }}/setup.sh && bash run_benchmarks.sh ${{ matrix.service }}"
 
       - name: List benchmark files
         run: |
