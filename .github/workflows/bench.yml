@@ -1,10 +1,12 @@
 name: "Run benchmark with Cached Devcontainer"
+
 on:
   pull_request_target:
     types: [assigned, opened, synchronize, reopened, edited]
   push:
     branches:
       - diff
+
 permissions:
   contents: write
   pull-requests: write
@@ -36,13 +38,23 @@ jobs:
           imageName: graphql-benchmarks
           push: never
           cacheFrom: type=local,src=/tmp/.buildx-cache
-          cacheTo: type=local,dest=/tmp/.buildx-cache-new
+          cacheTo: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
-      # This step is necessary to prevent the cache from growing indefinitely
       - name: Move cache
         run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          echo "Contents of /tmp:"
+          ls -la /tmp
+          echo "Contents of /tmp/.buildx-cache (if it exists):"
+          ls -la /tmp/.buildx-cache || echo "/tmp/.buildx-cache does not exist"
+          echo "Contents of /tmp/.buildx-cache-new (if it exists):"
+          ls -la /tmp/.buildx-cache-new || echo "/tmp/.buildx-cache-new does not exist"
+          
+          if [ -d "/tmp/.buildx-cache-new" ]; then
+            rm -rf /tmp/.buildx-cache
+            mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          else
+            echo "No new cache to move. Skipping cache update."
+          fi
 
   benchmark-job:
     needs: build-job
@@ -56,7 +68,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
-      
+
       - name: Load cached devcontainer
         uses: actions/cache@v3
         with:
@@ -84,20 +96,20 @@ jobs:
     steps:
       - name: Checkout (GitHub)
         uses: actions/checkout@v4
-      
+
       - name: Download all benchmark results
         uses: actions/download-artifact@v3
         with:
           name: benchmark-results
           path: .
-      
+
       - name: Analyze results
         run: |
           bash run_analyze_script.sh
-      
+
       - name: Print benchmark results
         run: cat ./results.md
-      
+
       - name: Comment benchmark results on PR
         if: github.event_name == 'pull_request_target'
         uses: peter-evans/commit-comment@v3
@@ -105,7 +117,7 @@ jobs:
           sha: ${{ github.event.pull_request.head.sha }}
           body-path: "results.md"
           reactions: eyes
-      
+
       - name: Commit and push changes (on main branch)
         if: github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v5
