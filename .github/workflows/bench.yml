@@ -81,7 +81,7 @@ jobs:
 
 
   analyze:
-    needs: benchmark
+    needs: benchmark-job
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (GitHub)
