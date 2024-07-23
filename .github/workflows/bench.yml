@@ -1,12 +1,10 @@
-name: "Run benchmark"
-
+name: "Run benchmark without Docker"
 on:
   pull_request_target:
     types: [assigned, opened, synchronize, reopened, edited]
   push:
     branches:
       - diff
-
 permissions:
   contents: write
   pull-requests: write
@@ -22,23 +20,31 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
-      - name: Setup docker buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build docker image
-        uses: docker/build-push-action@v6
+      
+      - name: Setup project dependencies
+        run: |
+          # Add commands to install necessary dependencies
+          # For example:
+          # sudo apt-get update
+          # sudo apt-get install -y <required-packages>
+      
+      - name: Build project
+        run: |
+          # Add commands to build your project
+          # For example:
+          # make build
+          # or
+          # npm install && npm run build
+      
+      - name: Cache build artifacts
+        uses: actions/cache@v3
         with:
-          context: .
-          file: ./.devcontainer/Dockerfile
-          tags: graphql-benchmarks:v1
-          outputs: type=docker,dest=/tmp/graphql-benchmarks.tar
-
-      - name: Upload docker image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: graphql-benchmarks
-          path: /tmp/graphql-benchmarks.tar
+          path: |
+            # Specify paths to cache, for example:
+            # build/
+            # dist/
+            # node_modules/
+          key: ${{ runner.os }}-build-${{ github.sha }}
 
   benchmark-job:
     needs: build-job
@@ -52,26 +58,21 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
-
-      - name: Download docker image artifact
-        uses: actions/download-artifact@v4
+      
+      - name: Restore cached build artifacts
+        uses: actions/cache@v3
         with:
-          name: graphql-benchmarks
-          path: /tmp/
-
-      - name: Load Docker image and Run benchmarks
+          path: |
+            # Specify the same paths as in the build-job
+          key: ${{ runner.os }}-build-${{ github.sha }}
+      
+      - name: Run benchmarks
         run: |
-          docker load -i /tmp/graphql-benchmarks.tar
-          docker run --rm \
-            -v $PWD:/workspace \
-            graphql-benchmarks:v1 \
-            bash -c "systemctl start docker.service && sleep 10 && cd /workspace && ls -R && ./graphql/${{ matrix.service }}/setup.sh && bash run_benchmarks.sh ${{ matrix.service }}"
-
-      - name: List benchmark files
-        run: |
-          echo "Contents of current directory:"
-          ls -la bench*.txt || echo "No matching files found"
-
+          # Add commands to run your benchmarks
+          # For example:
+          # ./graphql/${{ matrix.service }}/setup.sh
+          # bash run_benchmarks.sh ${{ matrix.service }}
+      
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
         with:
@@ -84,23 +85,27 @@ jobs:
     steps:
       - name: Checkout (GitHub)
         uses: actions/checkout@v4
-
+      
+      - name: Restore cached build artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            # Specify the same paths as in the build-job
+          key: ${{ runner.os }}-build-${{ github.sha }}
+      
       - name: Download all benchmark results
         uses: actions/download-artifact@v3
         with:
           name: benchmark-results
           path: .
-
-      - name: List downloaded artifacts
-        run: ls -la bench*.txt || echo "No matching files found"
-
+      
       - name: Analyze results
         run: |
           bash run_analyze_script.sh
-
+      
       - name: Print benchmark results
         run: cat ./results.md
-
+      
       - name: Comment benchmark results on PR
         if: github.event_name == 'pull_request_target'
         uses: peter-evans/commit-comment@v3
@@ -108,7 +113,7 @@ jobs:
           sha: ${{ github.event.pull_request.head.sha }}
           body-path: "results.md"
           reactions: eyes
-
+      
       - name: Commit and push changes (on main branch)
         if: github.ref == 'refs/heads/main'
         uses: stefanzweifel/git-auto-commit-action@v5
