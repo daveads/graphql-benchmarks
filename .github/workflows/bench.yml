@@ -65,7 +65,7 @@ jobs:
           docker run --rm \
             -v $PWD:/workspace \
             graphql-benchmarks:v1 \
-            bash -c "systemctl start docker.service && sleep 10 && cd /workspace && ./graphql/${{ matrix.service }}/setup.sh && bash run_benchmarks.sh ${{ matrix.service }}"
+            bash -c "systemctl start docker.service && sleep 10 && cd /workspace && ls -R && ./graphql/${{ matrix.service }}/setup.sh && bash run_benchmarks.sh ${{ matrix.service }}"
 
       - name: List benchmark files
         run: |
