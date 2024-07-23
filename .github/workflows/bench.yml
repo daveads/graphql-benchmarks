@@ -1,4 +1,4 @@
-name: "Run benchmark without Docker"
+name: "Run benchmark with Cached Devcontainer"
 on:
   pull_request_target:
     types: [assigned, opened, synchronize, reopened, edited]
@@ -20,31 +20,29 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      
-      - name: Setup project dependencies
-        run: |
-          # Add commands to install necessary dependencies
-          # For example:
-          # sudo apt-get update
-          # sudo apt-get install -y <required-packages>
-      
-      - name: Build project
-        run: |
-          # Add commands to build your project
-          # For example:
-          # make build
-          # or
-          # npm install && npm run build
-      
-      - name: Cache build artifacts
+
+      - name: Cache devcontainer
+        id: cache-devcontainer
         uses: actions/cache@v3
         with:
-          path: |
-            # Specify paths to cache, for example:
-            # build/
-            # dist/
-            # node_modules/
-          key: ${{ runner.os }}-build-${{ github.sha }}
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-devcontainer-${{ hashFiles('**/devcontainer.json', '**/Dockerfile') }}
+          restore-keys: |
+            ${{ runner.os }}-devcontainer-
+
+      - name: Build devcontainer
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: graphql-benchmarks
+          push: never
+          cacheFrom: type=local,src=/tmp/.buildx-cache
+          cacheTo: type=local,dest=/tmp/.buildx-cache-new
+
+      # This step is necessary to prevent the cache from growing indefinitely
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   benchmark-job:
     needs: build-job
@@ -59,20 +57,21 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
       
-      - name: Restore cached build artifacts
+      - name: Load cached devcontainer
         uses: actions/cache@v3
         with:
-          path: |
-            # Specify the same paths as in the build-job
-          key: ${{ runner.os }}-build-${{ github.sha }}
-      
-      - name: Run benchmarks
-        run: |
-          # Add commands to run your benchmarks
-          # For example:
-          # ./graphql/${{ matrix.service }}/setup.sh
-          # bash run_benchmarks.sh ${{ matrix.service }}
-      
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-devcontainer-${{ hashFiles('**/devcontainer.json', '**/Dockerfile') }}
+
+      - name: Run benchmarks in devcontainer
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: graphql-benchmarks
+          push: never
+          runCmd: |
+            ./graphql/${{ matrix.service }}/setup.sh
+            bash run_benchmarks.sh ${{ matrix.service }}
+
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
         with:
@@ -85,13 +84,6 @@ jobs:
     steps:
       - name: Checkout (GitHub)
         uses: actions/checkout@v4
-      
-      - name: Restore cached build artifacts
-        uses: actions/cache@v3
-        with:
-          path: |
-            # Specify the same paths as in the build-job
-          key: ${{ runner.os }}-build-${{ github.sha }}
       
       - name: Download all benchmark results
         uses: actions/download-artifact@v3
