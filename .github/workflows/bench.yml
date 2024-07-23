@@ -10,7 +10,7 @@ permissions:
   pull-requests: write
   issues: write
 jobs:
-  build:
+  benchmark:
     runs-on: ubuntu-latest
     if: github.event.head_commit.message != 'Update performance results in README.md'
     strategy:
@@ -48,7 +48,7 @@ jobs:
 
 
   analyze:
-    needs: build
+    needs: benchmark
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (GitHub)
