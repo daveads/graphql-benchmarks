@@ -26,8 +26,6 @@ jobs:
           imageName: graphql-benchmarks
           cacheFrom: graphql-benchmarks
           push: always
-          runCmd: |
-            bash setup.sh
 
 
 
@@ -46,7 +44,7 @@ jobs:
           runCmd: |
             bash ./graphql/${{ matrix.service }}/setup.sh
             echo "Setup completed for ${{ matrix.service }}"
-            
+
             bash run_benchmarks.sh ${{ matrix.service }}
             echo "Benchmark completed for ${{ matrix.service }}"
 
