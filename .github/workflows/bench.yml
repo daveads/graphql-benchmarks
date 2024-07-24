@@ -67,9 +67,7 @@ jobs:
       - name: Run Hasura setup (for Hasura only)
         if: matrix.service == 'hasura'
         run: |
-          cd ./graphql/hasura
-          bash setup.sh
-          cd ../..
+          bash ./graphql/hasura/setup.sh
       
       - name: Run benchmark for non-Hasura services
         if: matrix.service != 'hasura'
