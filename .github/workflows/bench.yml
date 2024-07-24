@@ -46,17 +46,27 @@ jobs:
       matrix:
         service: [apollo_server, caliban, netflix_dgs, gqlgen, tailcall, async_graphql, hasura, graphql_jit]
     steps:
-      - name: Run make ci-build in dev container
-        uses: devcontainers/ci@v0.3
-        with:
-          cacheFrom: daveads/graphql-benchmarks
-          push: never
-          runCmd: |
-            bash ./graphql/${{ matrix.service }}/setup.sh
-            echo "Setup completed for ${{ matrix.service }}"
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull Docker image
+        run: docker pull daveads/graphql-benchmarks:latest
+
+      - name: Run benchmark
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/workspace daveads/graphql-benchmarks:latest /bin/bash -c "
+            cd /workspace
+            bash ./graphql/${{ matrix.service }}/setup.sh
+            echo 'Setup completed for ${{ matrix.service }}'
             bash run_benchmarks.sh ${{ matrix.service }}
-            echo "Benchmark completed for ${{ matrix.service }}"
+            echo 'Benchmark completed for ${{ matrix.service }}'
+          "
 
       - name: List benchmark files
         run: |
