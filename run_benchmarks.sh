@@ -51,6 +51,8 @@ function runSingleBenchmark() {
     echo "Finished benchmark $bench for $serviceScript"
 }
 
+export -f runSingleBenchmark
+
 function runBenchmark() {
     killServerOnPort 8000
     sleep 5
@@ -97,11 +99,11 @@ function runBenchmark() {
         for resultFile in "result1_${sanitizedServiceScriptName}.txt" "result2_${sanitizedServiceScriptName}.txt" "result3_${sanitizedServiceScriptName}.txt"; do
             if [ -f "bench${bench}_${resultFile}" ]; then
                 if [ "$bench" == "1" ]; then
-                    bench1Results+=("bench1_${resultFile}")
+                    bench1Results+=("bench${bench}_${resultFile}")
                 elif [ "$bench" == "2" ]; then
-                    bench2Results+=("bench2_${resultFile}")
+                    bench2Results+=("bench${bench}_${resultFile}")
                 elif [ "$bench" == "3" ]; then
-                    bench3Results+=("bench3_${resultFile}")
+                    bench3Results+=("bench${bench}_${resultFile}")
                 fi
             else
                 echo "Missing result file: bench${bench}_${resultFile}"
