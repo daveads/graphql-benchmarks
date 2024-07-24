@@ -1,5 +1,5 @@
 #!/bin/bash
-#test
+
 # Start services and run benchmarks
 function killServerOnPort() {
   local port="$1"

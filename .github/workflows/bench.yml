@@ -1,17 +1,14 @@
-name: "Run benchmark with Cached Devcontainer"
-
+name: "Run benchmark"
 on:
   pull_request_target:
     types: [assigned, opened, synchronize, reopened, edited]
   push:
-    branches:
-      - diff
-
+    branches: 
+      - Test_bench
 permissions:
   contents: write
   pull-requests: write
   issues: write
-
 jobs:
   build-job:
     runs-on: ubuntu-latest
@@ -23,38 +20,17 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Cache devcontainer
-        id: cache-devcontainer
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-devcontainer-${{ hashFiles('**/devcontainer.json', '**/Dockerfile') }}
-          restore-keys: |
-            ${{ runner.os }}-devcontainer-
-
       - name: Build devcontainer
         uses: devcontainers/ci@v0.3
         with:
           imageName: graphql-benchmarks
-          push: never
-          cacheFrom: type=local,src=/tmp/.buildx-cache
-          cacheTo: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          cacheFrom: graphql-benchmarks
+          push: always
+          runCmd: |
+            bash setup.sh
+            sudo apt-get install parallel
 
-      - name: Move cache
-        run: |
-          echo "Contents of /tmp:"
-          ls -la /tmp
-          echo "Contents of /tmp/.buildx-cache (if it exists):"
-          ls -la /tmp/.buildx-cache || echo "/tmp/.buildx-cache does not exist"
-          echo "Contents of /tmp/.buildx-cache-new (if it exists):"
-          ls -la /tmp/.buildx-cache-new || echo "/tmp/.buildx-cache-new does not exist"
-          
-          if [ -d "/tmp/.buildx-cache-new" ]; then
-            rm -rf /tmp/.buildx-cache
-            mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-          else
-            echo "No new cache to move. Skipping cache update."
-          fi
+
 
   benchmark-job:
     needs: build-job
@@ -63,32 +39,26 @@ jobs:
       matrix:
         service: [apollo_server, caliban, netflix_dgs, gqlgen, tailcall, async_graphql, hasura, graphql_jit]
     steps:
-      - name: Checkout (GitHub)
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
-
-      - name: Load cached devcontainer
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-devcontainer-${{ hashFiles('**/devcontainer.json', '**/Dockerfile') }}
-
-      - name: Run benchmarks in devcontainer
+      - name: Run make ci-build in dev container
         uses: devcontainers/ci@v0.3
         with:
-          imageName: graphql-benchmarks
+          cacheFrom: graphql-benchmarks
           push: never
-          runCmd: |
-            ./graphql/${{ matrix.service }}/setup.sh
+          runCmd: make ci-build
             bash run_benchmarks.sh ${{ matrix.service }}
+            echo "Benchmark completed for ${{ matrix.service }}"
 
+      - name: List benchmark files
+        run: |
+          echo "Contents of current directory:"
+          ls -la bench*.txt || echo "No matching files found"
+      
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
         with:
           name: benchmark-results
           path: bench*.txt
+
 
   analyze:
     needs: benchmark-job
@@ -102,6 +72,9 @@ jobs:
         with:
           name: benchmark-results
           path: .
+
+      - name: List downloaded artifacts
+        run: ls -la bench*.txt || echo "No matching files found"
 
       - name: Analyze results
         run: |
