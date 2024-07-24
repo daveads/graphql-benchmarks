@@ -33,6 +33,7 @@ jobs:
           imageName: daveads/graphql-benchmarks
           cacheFrom: daveads/graphql-benchmarks
           push: always
+          workspaceFolder: /workspace
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -46,6 +47,7 @@ jobs:
         service: [apollo_server, caliban, netflix_dgs, gqlgen, tailcall, async_graphql, hasura, graphql_jit]
     steps:
       - name: Run make ci-build in dev container
+        uses: devcontainers/ci@v0.3
         with:
           cacheFrom: daveads/graphql-benchmarks
           push: never
