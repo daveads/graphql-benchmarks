@@ -1,9 +1,0 @@
-{
-  "name": "hasura",
-  "version": "1.0.0",
-  "main": "index.js",
-  "dependencies": {
-    "express": "^4.19.2",
-    "hasura-cli": "^2.36.1"
-  }
-}
