@@ -21,31 +21,12 @@ bench3Results=()
 killServerOnPort 3000
 sh nginx/run.sh
 
-function runBenchmark() {
-    killServerOnPort 8000
-    sleep 5
-    local serviceScript="$1"
-
-  if [[ "$serviceScript" == *"hasura"* ]]; then
-    bash "$serviceScript" # Run synchronously without background process
-  else
-    bash "$serviceScript" & # Run in daemon mode
-  fi
-
-  sleep 15 # Give some time for the service to start up
-
-  local graphqlEndpoint="http://localhost:8000/graphql"
-  if [[ "$serviceScript" == *"hasura"* ]]; then
-    graphqlEndpoint=http://127.0.0.1:8080/v1/graphql
-  fi
-
-  # Replace / with _
-  local sanitizedServiceScriptName=$(echo "$serviceScript" | tr '/' '_')
-
-  # Function to run a single benchmark
-  function runSingleBenchmark() {
+function runSingleBenchmark() {
     local bench="$1"
+    local graphqlEndpoint="$2"
+    local serviceScript="$3"
     local benchmarkScript="wrk/bench.sh"
+    local sanitizedServiceScriptName=$(echo "$serviceScript" | tr '/' '_')
     local resultFiles=("result1_${sanitizedServiceScriptName}.txt" "result2_${sanitizedServiceScriptName}.txt" "result3_${sanitizedServiceScriptName}.txt")
 
     echo "Starting benchmark $bench for $serviceScript"
@@ -68,46 +49,65 @@ function runBenchmark() {
     done
 
     echo "Finished benchmark $bench for $serviceScript"
-  }
+}
 
-  # Run benchmarks in parallel with a timeout
-  timeout 600s runSingleBenchmark 1 &
-  pid1=$!
-  timeout 600s runSingleBenchmark 2 &
-  pid2=$!
-  timeout 600s runSingleBenchmark 3 &
-  pid3=$!
+function runBenchmark() {
+    killServerOnPort 8000
+    sleep 5
+    local serviceScript="$1"
 
-  # Wait for all benchmarks to complete or timeout
-  wait $pid1 $pid2 $pid3
+    if [[ "$serviceScript" == *"hasura"* ]]; then
+        bash "$serviceScript" # Run synchronously without background process
+    else
+        bash "$serviceScript" & # Run in daemon mode
+    fi
 
-  # Check if any of the benchmarks timed out
-  if ! ps -p $pid1 > /dev/null; then
-    echo "Benchmark 1 timed out or failed"
-  fi
-  if ! ps -p $pid2 > /dev/null; then
-    echo "Benchmark 2 timed out or failed"
-  fi
-  if ! ps -p $pid3 > /dev/null; then
-    echo "Benchmark 3 timed out or failed"
-  fi
+    sleep 15 # Give some time for the service to start up
 
-  # Collect results
-  for bench in 1 2 3; do
-    for resultFile in "result1_${sanitizedServiceScriptName}.txt" "result2_${sanitizedServiceScriptName}.txt" "result3_${sanitizedServiceScriptName}.txt"; do
-      if [ -f "bench${bench}_${resultFile}" ]; then
-        if [ "$bench" == "1" ]; then
-          bench1Results+=("bench1_${resultFile}")
-        elif [ "$bench" == "2" ]; then
-          bench2Results+=("bench2_${resultFile}")
-        elif [ "$bench" == "3" ]; then
-          bench3Results+=("bench3_${resultFile}")
-        fi
-      else
-        echo "Missing result file: bench${bench}_${resultFile}"
-      fi
+    local graphqlEndpoint="http://localhost:8000/graphql"
+    if [[ "$serviceScript" == *"hasura"* ]]; then
+        graphqlEndpoint=http://127.0.0.1:8080/v1/graphql
+    fi
+
+    # Run benchmarks in parallel with a timeout
+    timeout 600s bash -c "runSingleBenchmark 1 '$graphqlEndpoint' '$serviceScript'" &
+    pid1=$!
+    timeout 600s bash -c "runSingleBenchmark 2 '$graphqlEndpoint' '$serviceScript'" &
+    pid2=$!
+    timeout 600s bash -c "runSingleBenchmark 3 '$graphqlEndpoint' '$serviceScript'" &
+    pid3=$!
+
+    # Wait for all benchmarks to complete or timeout
+    wait $pid1 $pid2 $pid3
+
+    # Check if any of the benchmarks timed out
+    if ! ps -p $pid1 > /dev/null; then
+        echo "Benchmark 1 timed out or failed"
+    fi
+    if ! ps -p $pid2 > /dev/null; then
+        echo "Benchmark 2 timed out or failed"
+    fi
+    if ! ps -p $pid3 > /dev/null; then
+        echo "Benchmark 3 timed out or failed"
+    fi
+
+    # Collect results
+    local sanitizedServiceScriptName=$(echo "$serviceScript" | tr '/' '_')
+    for bench in 1 2 3; do
+        for resultFile in "result1_${sanitizedServiceScriptName}.txt" "result2_${sanitizedServiceScriptName}.txt" "result3_${sanitizedServiceScriptName}.txt"; do
+            if [ -f "bench${bench}_${resultFile}" ]; then
+                if [ "$bench" == "1" ]; then
+                    bench1Results+=("bench1_${resultFile}")
+                elif [ "$bench" == "2" ]; then
+                    bench2Results+=("bench2_${resultFile}")
+                elif [ "$bench" == "3" ]; then
+                    bench3Results+=("bench3_${resultFile}")
+                fi
+            else
+                echo "Missing result file: bench${bench}_${resultFile}"
+            fi
+        done
     done
-  done
 }
 
 rm -f "results.md"
@@ -131,16 +131,16 @@ runBenchmark "graphql/${service}/run.sh"
 
 # Display results
 for bench in 1 2 3; do
-  echo "Benchmark $bench"
-  for result in $(eval echo \${bench${bench}Results[@]}); do
-    if [ -f "$result" ]; then
-      cat "$result"
-    else
-      echo "Missing result file: $result"
-    fi
-  done
-  echo "End of Benchmark $bench"
-  echo ""
+    echo "Benchmark $bench"
+    for result in $(eval echo \${bench${bench}Results[@]}); do
+        if [ -f "$result" ]; then
+            cat "$result"
+        else
+            echo "Missing result file: $result"
+        fi
+    done
+    echo "End of Benchmark $bench"
+    echo ""
 done
 
 if [ "$service" == "apollo_server" ]; then
