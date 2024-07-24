@@ -33,7 +33,6 @@ jobs:
           imageName: daveads/graphql-benchmarks
           cacheFrom: daveads/graphql-benchmarks
           push: always
-          workspaceFolder: /home/runner/work/graphql-benchmarks/graphql-benchmarks
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
