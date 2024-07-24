@@ -43,7 +43,7 @@ jobs:
         with:
           cacheFrom: graphql-benchmarks
           push: never
-          runCmd: make ci-build
+          runCmd: |
             bash run_benchmarks.sh ${{ matrix.service }}
             echo "Benchmark completed for ${{ matrix.service }}"
 
