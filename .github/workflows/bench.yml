@@ -23,8 +23,8 @@ jobs:
       - name: Build devcontainer
         uses: devcontainers/ci@v0.3
         with:
-          imageName: graphql-benchmarks
-          cacheFrom: graphql-benchmarks
+          imageName: ghcr.io/${{ github.repository }}/graphql-benchmarks
+          cacheFrom: ghcr.io/${{ github.repository }}/graphql-benchmarks
           push: always
 
 
