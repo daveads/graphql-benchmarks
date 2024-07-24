@@ -24,15 +24,14 @@ jobs:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
           
       - name: Build devcontainer
         uses: devcontainers/ci@v0.3
         with:
-          imageName: ghcr.io/${{ github.repository }}/graphql-benchmarks
-          cacheFrom: ghcr.io/${{ github.repository }}/graphql-benchmarks
+          imageName: daveads/graphql-benchmarks
+          cacheFrom: daveads/graphql-benchmarks
           push: always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -49,7 +48,7 @@ jobs:
       - name: Run make ci-build in dev container
         uses: devcontainers/ci@v0.3
         with:
-          cacheFrom: graphql-benchmarks
+          cacheFrom: daveads/graphql-benchmarks
           push: never
           runCmd: |
             bash ./graphql/${{ matrix.service }}/setup.sh
