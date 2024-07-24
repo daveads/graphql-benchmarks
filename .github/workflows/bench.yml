@@ -56,21 +56,8 @@ jobs:
 
       - name: Pull Docker image
         run: docker pull daveads/graphql-benchmarks:latest
-
-      - name: Set up Hasura dependencies (for Hasura only)
-        if: matrix.service == 'hasura'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client jq
-          npm install -g hasura-cli
-
-      - name: Run Hasura setup (for Hasura only)
-        if: matrix.service == 'hasura'
-        run: |
-          bash ./graphql/hasura/setup.sh
       
-      - name: Run benchmark for non-Hasura services
-        if: matrix.service != 'hasura'
+      - name: Run benchmark
         run: |
           docker run --rm -v ${{ github.workspace }}:/workspace daveads/graphql-benchmarks:latest /bin/bash -c "
             cd /workspace
@@ -79,12 +66,6 @@ jobs:
             bash run_benchmarks.sh ${{ matrix.service }}
             echo 'Benchmark completed for ${{ matrix.service }}'
           "
-
-      - name: Run Hasura benchmark
-        if: matrix.service == 'hasura'
-        run: |
-          bash run_benchmarks.sh hasura
-          echo 'Benchmark completed for hasura'
 
       - name: List benchmark files
         run: |
