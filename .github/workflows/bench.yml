@@ -28,7 +28,6 @@ jobs:
           push: always
           runCmd: |
             bash setup.sh
-            sudo apt-get install parallel
 
 
 
