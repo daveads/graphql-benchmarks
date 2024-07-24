@@ -63,7 +63,7 @@ jobs:
             cd /workspace
             bash ./graphql/${{ matrix.service }}/setup.sh
             echo 'Setup completed for ${{ matrix.service }}'
-            bash run_benchmarks.sh ${{ matrix.service }}
+            node run_benchmarks.js ${{ matrix.service }}
             echo 'Benchmark completed for ${{ matrix.service }}'
           "
 
