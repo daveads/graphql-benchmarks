@@ -26,8 +26,7 @@ jobs:
           imageName: ghcr.io/${{ github.repository }}/graphql-benchmarks
           cacheFrom: ghcr.io/${{ github.repository }}/graphql-benchmarks
           push: always
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          env: GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
 
