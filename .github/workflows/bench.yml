@@ -32,8 +32,8 @@ jobs:
             bash ./graphql/${{ matrix.service }}/setup.sh
             echo "Setup completed for ${{ matrix.service }}"
 
-            sudo apt-get install parallel
             npm install
+            sudo npm install -g typescript
 
             tsc run_benchmarks.ts
             node run_benchmarks.js ${{ matrix.service }}
