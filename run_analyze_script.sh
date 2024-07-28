@@ -6,6 +6,8 @@ sudo apt-get update && sudo apt-get install -y gnuplot
 # Remove existing results file
 rm -f results.md
 
+npm install
+
 services=("apollo" "caliban" "netflixdgs" "gqlgen" "tailcall" "async_graphql" "hasura" "graphql_jit")
 
 # Loop through each benchmark (1, 2, 3)

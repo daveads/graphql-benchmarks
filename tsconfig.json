@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2018",
-    "module": "CommonJS",
-    "rootDir": "./",
-    "strict": true,
+    "target": "es6",
+    "module": "commonjs",
+    "lib": ["es6"],
+    "types": ["node"],
     "esModuleInterop": true
   }
 }
