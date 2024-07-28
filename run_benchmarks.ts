@@ -8,7 +8,7 @@ const execAsync = util.promisify(exec);
 // Start services and run benchmarks
 function killServerOnPort(port: number): void {
   try {
-    const pid = execSync(`lsof -t -i:${port}`).toString().trim();
+    const pid: string = execSync(`lsof -t -i:${port}`).toString().trim();
     if (pid) {
       execSync(`kill ${pid}`);
       console.log(`Killed process running on port ${port}`);
@@ -74,7 +74,7 @@ async function runBenchmark(serviceScript: string): Promise<void> {
   execSync('sleep 15');
 
   const benchmarks = [1, 2, 3];
-  const benchmarkPromises = benchmarks.map(bench => runBenchmarkAsync(serviceScript, bench));
+  const benchmarkPromises: Promise<void>[] = benchmarks.map(bench => runBenchmarkAsync(serviceScript, bench));
   await Promise.all(benchmarkPromises);
 }
 
@@ -85,8 +85,8 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 
-const service = process.argv[2];
-const validServices = ['apollo_server', 'caliban', 'netflix_dgs', 'gqlgen', 'tailcall', 'async_graphql', 'hasura', 'graphql_jit'];
+const service: string = process.argv[2];
+const validServices: string[] = ['apollo_server', 'caliban', 'netflix_dgs', 'gqlgen', 'tailcall', 'async_graphql', 'hasura', 'graphql_jit'];
 
 if (!validServices.includes(service)) {
   console.log(`Invalid service name. Available services: ${validServices.join(', ')}`);
@@ -108,7 +108,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(error => {
+main().catch((error: Error) => {
   console.error("An error occurred:", error);
   process.exit(1);
 });
