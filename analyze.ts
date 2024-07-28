@@ -10,7 +10,11 @@ import { generateGnuplotScript, writeGnuplotScript } from './analyze/gnuplotGene
 import { formatResults, writeResults } from './analyze/resultsFormatter';
 
 const resultFiles: string[] = process.argv.slice(2);
-const serverMetrics = parseServerMetrics(servers, resultFiles);
+
+// Read content of result files
+const resultContents: string[] = resultFiles.map(file => readFileContent(file));
+
+const serverMetrics = parseServerMetrics(servers, resultContents);
 
 writeMetricsDataFiles(serverMetrics, servers);
 

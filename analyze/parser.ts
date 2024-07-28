@@ -1,15 +1,19 @@
-import { execSync } from 'child_process';
 import { ServerMetrics } from './types';
 
-export function parseMetric(file: string, metric: string): number | null {
-  try {
-    const command = `grep "${metric}" "${file}" | awk '{print $2}' | sed 's/ms//'`;
-    const result = execSync(command, { encoding: 'utf-8' }).trim();
-    return parseFloat(result);
-  } catch (error) {
-    console.error(`Error parsing metric from ${file}: ${(error as Error).message}`);
-    return null;
+export function parseMetric(input: string, metric: string): number | null {
+  const lines = input.split('\n');
+  let metricLine: string | undefined;
+
+  if (metric === "Latency") {
+    metricLine = lines.find(line => line.trim().startsWith("Latency"));
+  } else if (metric === "Requests/sec") {
+    metricLine = lines.find(line => line.trim().startsWith("Requests/sec"));
   }
+
+  if (!metricLine) return null;
+
+  const match = metricLine.match(/([\d.]+)/);
+  return match ? parseFloat(match[1]) : null;
 }
 
 export function calculateAverage(values: number[]): number {
@@ -18,7 +22,7 @@ export function calculateAverage(values: number[]): number {
   return sum / values.length;
 }
 
-export function parseServerMetrics(servers: string[], resultFiles: string[]): Record<string, ServerMetrics> {
+export function parseServerMetrics(servers: string[], inputs: string[]): Record<string, ServerMetrics> {
   const serverMetrics: Record<string, ServerMetrics> = {};
 
   servers.forEach((server, idx) => {
@@ -26,10 +30,10 @@ export function parseServerMetrics(servers: string[], resultFiles: string[]): Re
     const reqSecVals: number[] = [];
     const latencyVals: number[] = [];
     for (let j = 0; j < 3; j++) {
-      const fileIdx = startIdx + j;
-      if (fileIdx < resultFiles.length) {
-        const reqSec = parseMetric(resultFiles[fileIdx], "Requests/sec");
-        const latency = parseMetric(resultFiles[fileIdx], "Latency");
+      const inputIdx = startIdx + j;
+      if (inputIdx < inputs.length) {
+        const reqSec = parseMetric(inputs[inputIdx], "Requests/sec");
+        const latency = parseMetric(inputs[inputIdx], "Latency");
         if (reqSec !== null) reqSecVals.push(reqSec);
         if (latency !== null) latencyVals.push(latency);
       }
