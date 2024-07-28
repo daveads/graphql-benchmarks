@@ -33,7 +33,8 @@ jobs:
             echo "Setup completed for ${{ matrix.service }}"
             
             sudo apt-get install parallel
-            bash run_benchmarks.sh ${{ matrix.service }}
+            tsc run_benchmarks.ts
+            node run_benchmarks.js ${{ matrix.service }}
             echo "Benchmark completed for ${{ matrix.service }}"
 
       - name: List benchmark files

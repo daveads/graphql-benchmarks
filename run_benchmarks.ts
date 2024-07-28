@@ -1,12 +1,12 @@
-const { exec, execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const util = require('util');
+import { exec, execSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as util from 'util';
 
 const execAsync = util.promisify(exec);
 
 // Start services and run benchmarks
-function killServerOnPort(port) {
+function killServerOnPort(port: number): void {
   try {
     const pid = execSync(`lsof -t -i:${port}`).toString().trim();
     if (pid) {
@@ -16,23 +16,22 @@ function killServerOnPort(port) {
       console.log(`No process found running on port ${port}`);
     }
   } catch (error) {
-    console.error(`Error killing server on port ${port}:`, error.message);
+    console.error(`Error killing server on port ${port}:`, (error as Error).message);
   }
 }
 
-const bench1Results = [];
-const bench2Results = [];
-const bench3Results = [];
+const bench1Results: string[] = [];
+const bench2Results: string[] = [];
+const bench3Results: string[] = [];
 
 killServerOnPort(3000);
 execSync('sh nginx/run.sh');
 
-async function runBenchmarkAsync(serviceScript, bench) {
+async function runBenchmarkAsync(serviceScript: string, bench: number): Promise<void> {
   let graphqlEndpoint = 'http://localhost:8000/graphql';
   if (serviceScript.includes('hasura')) {
     graphqlEndpoint = 'http://127.0.0.1:8080/v1/graphql';
   }
-
   const benchmarkScript = 'wrk/bench.sh';
   const sanitizedServiceScriptName = serviceScript.replace(/\//g, '_');
   const resultFiles = [
@@ -54,7 +53,6 @@ async function runBenchmarkAsync(serviceScript, bench) {
     console.log(`Running benchmark ${bench} for ${serviceScript}`);
     const outputFile = `bench${bench}_${resultFile}`;
     await execAsync(`bash ${benchmarkScript} ${graphqlEndpoint} ${bench} > ${outputFile}`);
-    
     if (bench === 1) {
       bench1Results.push(outputFile);
     } else if (bench === 2) {
@@ -65,21 +63,18 @@ async function runBenchmarkAsync(serviceScript, bench) {
   }
 }
 
-async function runBenchmark(serviceScript) {
+async function runBenchmark(serviceScript: string): Promise<void> {
   killServerOnPort(8000);
   execSync('sleep 5');
-
   if (serviceScript.includes('hasura')) {
     execSync(`bash ${serviceScript}`, { stdio: 'inherit' });
   } else {
     execSync(`bash ${serviceScript} &`, { stdio: 'inherit' });
   }
-
   execSync('sleep 15');
 
   const benchmarks = [1, 2, 3];
   const benchmarkPromises = benchmarks.map(bench => runBenchmarkAsync(serviceScript, bench));
-
   await Promise.all(benchmarkPromises);
 }
 
@@ -102,9 +97,8 @@ if (fs.existsSync('results.md')) {
   fs.unlinkSync('results.md');
 }
 
-async function main() {
+async function main(): Promise<void> {
   await runBenchmark(`graphql/${service}/run.sh`);
-
   if (service === 'apollo_server') {
     process.chdir('graphql/apollo_server');
     execSync('npm stop');
